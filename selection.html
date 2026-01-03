@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthplace Selection - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        h1 { color: #62ffe1; font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 5px; text-transform: uppercase; }
+        .subtitle { font-style: italic; color: #888; font-size: 0.8rem; margin-bottom: 25px; }
+        
+        .village-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        
+        .village-card { 
+            background: #111; border: 1px solid #333; padding: 15px; 
+            border-radius: 6px; cursor: pointer; transition: 0.2s;
+            text-align: left;
+        }
+        .village-card:hover { border-color: #62ffe1; background: #161616; }
+        
+        .village-name { font-weight: bold; font-size: 1rem; color: #62ffe1; }
+        .affinity { font-size: 0.7rem; color: #ffcc00; text-transform: uppercase; margin-bottom: 5px; }
+        .description { font-size: 0.75rem; line-height: 1.4; color: #bbb; }
+
+        #gatekeeper {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #050505; display: flex; justify-content: center; 
+            align-items: center; z-index: 999; color: #62ffe1; font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gatekeeper">READING SOUL HISTORY...</div>
+
+    <div class="game-container">
+        <h1>ORIGIN SELECTION</h1>
+        <p class="subtitle">"Your first breath defines your path."</p>
+
+        <div class="village-list">
+            <div class="village-card" onclick="sealDestiny('Inferno Island', 'Fire')">
+                <div class="village-name">Inferno Island</div>
+                <div class="affinity">Fire</div>
+                <p class="description">Forged in volcanic ash. Raw power and destructive heat.</p>
+            </div>
+
+            <div class="village-card" onclick="sealDestiny('Glacier Reach', 'Water')">
+                <div class="village-name">Glacier Reach</div>
+                <div class="affinity">Water</div>
+                <p class="description">Hardened by frost. Patience and fluid defense.</p>
+            </div>
+
+            <div class="village-card" onclick="sealDestiny('Storm Peaks', 'Lightning')">
+                <div class="village-name">Storm Peaks</div>
+                <div class="affinity">Lightning</div>
+                <p class="description">Swift strikes and unpredictable movements.</p>
+            </div>
+
+            <div class="village-card" onclick="sealDestiny('Everglade', 'Earth')">
+                <div class="village-name">Everglade</div>
+                <div class="affinity">Earth</div>
+                <p class="description">Unmatched resilience and steady resolve.</p>
+            </div>
+            
+            <div class="village-card" onclick="sealDestiny('Shadow Abyss', 'Shadow')">
+                <div class="village-name">Shadow Abyss</div>
+                <div class="affinity">Shadow</div>
+                <p class="description">Born from darkness. Lethal and unseen.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let activeSovereign = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                activeSovereign = user;
+                const docRef = doc(db, "players", user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().birthplace) {
+                    window.location.href = "map.html";
+                } else {
+                    document.getElementById('gatekeeper').style.display = 'none';
+                }
+            } else {
+                window.location.href = "index.html"; 
+            }
+        });
+
+        window.sealDestiny = async (village, element) => {
+            if (!activeSovereign) return;
+            if (confirm(`Accept ${village} as your permanent origin?`)) {
+                try {
+                    await setDoc(doc(db, "players", activeSovereign.uid), {
+                        name: activeSovereign.displayName,
+                        birthplace: village,
+                        element: element,
+                        level: 1,
+                        exp: 0,
+                        gold: 100,
+                        stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50, str: 10, vit: 10, skl: 10 },
+                        timestamp: new Date()
+                    });
+                    window.location.href = "map.html"; 
+                } catch (err) {
+                    alert("The void rejected your choice.");
+                }
+            }
+        };
+    </script>
+</body>
+</html>

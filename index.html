@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereigns of Ruin - Enter the Void</title>
+    <style>
+        body { 
+            background-color: #050505; 
+            color: #eee; 
+            font-family: 'Verdana', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        .landing-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
+            border: 1px solid #222;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            color: #62ffe1;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(98, 255, 225, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .lore-text {
+            font-style: italic;
+            font-size: 0.9rem;
+            color: #888;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+
+        .auth-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input {
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 12px;
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus { border-color: #62ffe1; }
+
+        .btn-main {
+            background: #62ffe1;
+            color: #000;
+            border: none;
+            padding: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .btn-main:hover { background: #4adbbd; transform: translateY(-1px); }
+
+        .toggle-auth {
+            font-size: 0.8rem;
+            color: #666;
+            cursor: pointer;
+            margin-top: 10px;
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            color: #ff5555;
+            font-size: 0.8rem;
+            min-height: 1.2em;
+            line-height: 1.4;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="landing-container">
+        <h1>SOVEREIGNS OF RUIN</h1>
+        
+        <p class="lore-text">
+            "The ancient seals have cracked. Darkness bleeds into the edges of the world, 
+            and the Sovereigns have claimed the wild lands. You are a shadow of your 
+            former self, seeking to reclaim what was lost in the ash."
+        </p>
+
+        <div class="auth-box">
+            <h3 id="authTitle" style="font-size: 0.9rem; color: #62ffe1;">RECLAIM YOUR SOUL (Login)</h3>
+            <input type="email" id="email" placeholder="Email Address">
+            <input type="password" id="password" placeholder="Password">
+            <div id="errorDisplay" class="error-msg"></div>
+            <button class="btn-main" id="authBtn">Enter the Ruin</button>
+            <a href="register.html" class="toggle-auth">New survivor? Create a profile</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const authBtn = document.getElementById('authBtn');
+        const errorDisplay = document.getElementById('errorDisplay');
+
+        authBtn.onclick = async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Reset error message
+            errorDisplay.innerText = "";
+
+            if(!email || !password) {
+                errorDisplay.innerText = "The void requires both email and password.";
+                return;
+            }
+
+            try {
+                // 1. Attempt Sign-In
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. CHECK IF EMAIL IS VERIFIED
+                if (!user.emailVerified) {
+                    errorDisplay.style.color = "#ffcc00"; // Yellow warning for verification
+                    errorDisplay.innerText = "Your soul is not yet verified. Please click the link sent to your email (check Spam folder).";
+                    
+                    // Force logout so the session doesn't stay open while unverified
+                    await signOut(auth);
+                    return;
+                }
+
+                // 3. SUCCESSFUL LOGIN
+                // User is verified, send them to the Selection Page
+                window.location.href = "selection.html";
+
+            } catch (error) {
+                // Handle wrong passwords, non-existent users, etc.
+                errorDisplay.style.color = "#ff5555";
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
+                    errorDisplay.innerText = "Invalid credentials. Are you sure you exist in this realm?";
+                } else {
+                    errorDisplay.innerText = "Authentication failed. Check your connection or credentials.";
+                }
+                console.error("Login Error:", error.message);
+            }
+        };
+    </script>
+</body>
+</html>

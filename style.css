@@ -1,0 +1,34 @@
+/* GLOBAL GAME STYLES */
+body { 
+    background-color: #050505; 
+    color: #eee; 
+    font-family: 'Verdana', sans-serif; 
+    margin: 0; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 100vh; 
+    overflow-x: hidden; 
+}
+
+/* THE LOCKED 400PX WINDOW */
+.game-container {
+    width: 100%;
+    max-width: 400px;
+    height: 90vh; /* Keeps it contained vertically too */
+    padding: 20px;
+    background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
+    border: 1px solid #222;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Adds a scrollbar INSIDE the window if content is long */
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Scrollbar styling for that dark-mode look */
+.game-container::-webkit-scrollbar { width: 4px; }
+.game-container::-webkit-scrollbar-track { background: #050505; }
+.game-container::-webkit-scrollbar-thumb { background: #62ffe1; }

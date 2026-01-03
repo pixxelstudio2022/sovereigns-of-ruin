@@ -15,7 +15,7 @@ body {
 .game-container {
     width: 100%;
     max-width: 400px;
-    height: 90vh; /* Keeps it contained vertically too */
+    height: 90vh; /* Keeps it contained vertically */
     padding: 20px;
     background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
     border: 1px solid #222;
@@ -23,12 +23,15 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
-    overflow-y: auto; /* Adds a scrollbar INSIDE the window if content is long */
     position: relative;
     box-sizing: border-box;
+    /* NEW STYLES TO REMOVE SCROLLBAR */
+    overflow: hidden; 
+    display: flex;
+    flex-direction: column;
 }
 
-/* Scrollbar styling for that dark-mode look */
+/* Scrollbar styling - Kept for safety, though hidden by overflow: hidden */
 .game-container::-webkit-scrollbar { width: 4px; }
 .game-container::-webkit-scrollbar-track { background: #050505; }
 .game-container::-webkit-scrollbar-thumb { background: #62ffe1; }

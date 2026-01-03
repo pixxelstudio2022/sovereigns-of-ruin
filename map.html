@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Hub - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .theme-Fire { --accent: #ff4444; }
+        .theme-Water { --accent: #44aaff; }
+        .theme-Wind { --accent: #62ffe1; }
+        .theme-Earth { --accent: #aa7744; }
+        .theme-Light { --accent: #ffffcc; }
+        .theme-Shadow { --accent: #bb66ff; }
+
+        /* Compact Top Bar */
+        .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; }
+        #realTimeClock { color: var(--accent); }
+        #pingDisplay { font-weight: bold; transition: color 0.3s ease; }
+
+        /* Header & Stats */
+        .stat-header { border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0; }
+        .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); }
+        .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
+        
+        /* Progress Bars */
+        .resource-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .bar-container { background: #111; height: 10px; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; }
+        .bar-fill { height: 100%; transition: width 0.5s ease; }
+        .hp-fill { background: #ff4444; }
+        .mana-fill { background: #44aaff; }
+        .exp-fill { background: #ccff00; }
+        .bar-label { position: absolute; top: 0; left: 4px; font-size: 0.5rem; line-height: 10px; font-weight: bold; color: white; text-transform: uppercase; text-shadow: 1px 1px 1px #000; }
+
+        .currency-row { display: flex; gap: 12px; margin-top: 5px; font-size: 0.7rem; font-weight: bold; }
+        .gold { color: #ffcc00; }
+        .shards { color: #62ffe1; }
+
+        /* Auto-Fitting Navigation List */
+        .map-locations { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            flex-grow: 1; 
+            justify-content: space-evenly; 
+        }
+        
+        .loc-btn {
+            background: #0a0a0a; border: 1px solid #222; color: #eee;
+            padding: 8px 12px; border-radius: 5px; cursor: pointer; text-align: left;
+            display: flex; flex-direction: column; justify-content: center;
+            min-height: 42px; 
+            transition: 0.2s ease;
+        }
+        .loc-btn:hover { border-color: var(--accent); background: #111; transform: translateX(2px); }
+        
+        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.8rem; }
+        .loc-desc { font-size: 0.6rem; color: #666; line-height: 1.1; margin-top: 1px; }
+
+        .badge-new { background: var(--accent); color: #000; font-size: 0.5rem; padding: 0px 4px; border-radius: 2px; margin-left: 5px; font-weight: bold; }
+
+        #loading { position: fixed; inset: 0; background: #050505; z-index: 1000; display: flex; justify-content: center; align-items: center; color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body class="theme-Light" id="bodyTheme">
+
+    <div id="loading">MANIFESTING REALM...</div>
+
+    <div class="game-container">
+        <div class="top-status">
+            <div id="realTimeClock">00:00:00</div>
+            <div>PING: <span id="pingDisplay">--</span>ms</div>
+        </div>
+
+        <div class="stat-header">
+            <span class="sov-lvl">LVL <span id="pLvl">1</span></span>
+            <span class="sov-name" id="pName">Sovereign</span>
+            <div class="resource-bars">
+                <div class="bar-container"><div class="bar-fill hp-fill" id="hpBar"></div><span class="bar-label" id="hpLabel">HP: 100/100</span></div>
+                <div class="bar-container"><div class="bar-fill mana-fill" id="manaBar"></div><span class="bar-label" id="manaLabel">MANA: 50/50</span></div>
+                <div class="bar-container"><div class="bar-fill exp-fill" id="expBar"></div><span class="bar-label" id="expLabel">EXP: 0/100</span></div>
+            </div>
+            <div class="currency-row">
+                <span class="gold">GOLD: <span id="pGold">100</span></span>
+                <span class="shards">SHARDS: <span id="pShards">0</span></span>
+            </div>
+        </div>
+
+        <div class="map-locations">
+            <button class="loc-btn" onclick="window.location.href='events.html'">
+                <span class="loc-title">Events <span class="badge-new">LIVE</span></span>
+                <span class="loc-desc">Prophecies of the Blood Moon.</span>
+            </button>
+
+            <button class="loc-btn" onclick="window.location.href='chat.html'">
+                <span class="loc-title">Global Echoes</span>
+                <span class="loc-desc">Commune with other survivors across the fractured realms.</span>
+            </button>
+
+            <button class="loc-btn" onclick="alert('Entering Training Grounds...')">
+                <span class="loc-title">Training Grounds</span>
+                <span class="loc-desc">Upgrade abilities and core stats with gold.</span>
+            </button>
+
+            <button class="loc-btn" onclick="alert('Visiting Village Forge...')">
+                <span class="loc-title">Village Forge</span>
+                <span class="loc-desc">Temper your weapons and armor for survival.</span>
+            </button>
+
+            <button class="loc-btn" onclick="alert('Opening The Bazaar...')">
+                <span class="loc-title">The Bazaar</span>
+                <span class="loc-desc">Exchange currencies for rare artifacts.</span>
+            </button>
+
+            <button class="loc-btn" onclick="alert('Checking Bounty Board...')">
+                <span class="loc-title">Quest Board</span>
+                <span class="loc-desc">Find work to earn gold and reputation.</span>
+            </button>
+
+            <button class="loc-btn" onclick="alert('Opening Hall of Sovereigns...')">
+                <span class="loc-title">Hall of Sovereigns</span>
+                <span class="loc-desc">Compare your standing with other legends.</span>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // CLOCK
+        setInterval(() => {
+            document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        // PING SCRIPT
+        async function checkPing() {
+            const start = Date.now();
+            try {
+                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-cache' });
+                const ping = Date.now() - start;
+                const pBox = document.getElementById('pingDisplay');
+                pBox.innerText = ping;
+                if (ping < 100) pBox.style.color = "#62ffe1";
+                else if (ping < 250) pBox.style.color = "#ffcc00";
+                else pBox.style.color = "#ff4444";
+            } catch (e) { document.getElementById('pingDisplay').innerText = "??"; }
+        }
+        setInterval(checkPing, 3000);
+        checkPing();
+
+        // PLAYER DATA SYNC
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docSnap = await getDoc(doc(db, "players", user.uid));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('pName').innerText = data.name;
+                    document.getElementById('pLvl').innerText = data.level;
+                    document.getElementById('pGold').innerText = data.gold;
+                    document.getElementById('pShards').innerText = data.shards || 0;
+                    
+                    // Stats & Bars
+                    const s = data.stats;
+                    document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
+                    document.getElementById('hpLabel').innerText = `HP: ${s.hp}/${s.maxHp}`;
+                    document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
+                    document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
+                    
+                    const nextLvlExp = (data.level || 1) * 100;
+                    document.getElementById('expBar').style.width = ((data.exp || 0) / nextLvlExp * 100) + "%";
+                    document.getElementById('expLabel').innerText = `EXP: ${data.exp || 0}/${nextLvlExp}`;
+                    
+                    document.getElementById('bodyTheme').className = `theme-${data.element}`;
+                    document.getElementById('loading').style.display = 'none';
+                }
+            } else { window.location.href = "index.html"; }
+        });
+    </script>
+</body>
+</html>

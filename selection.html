@@ -6,21 +6,41 @@
     <title>Birthplace Selection - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        h1 { color: #62ffe1; font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 5px; text-transform: uppercase; }
-        .subtitle { font-style: italic; color: #888; font-size: 0.8rem; margin-bottom: 25px; }
+        h1 { color: #62ffe1; font-size: 1.2rem; letter-spacing: 1px; margin-bottom: 2px; text-transform: uppercase; }
+        .subtitle { font-style: italic; color: #888; font-size: 0.75rem; margin-bottom: 15px; }
         
-        .village-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .village-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
         
         .village-card { 
-            background: #111; border: 1px solid #333; padding: 15px; 
-            border-radius: 6px; cursor: pointer; transition: 0.2s;
-            text-align: left;
+            background: #0d0d0d; border: 1px solid #222; padding: 10px 15px; 
+            border-radius: 6px; cursor: pointer; transition: 0.2s ease;
+            text-align: left; border-left: 4px solid #333;
         }
-        .village-card:hover { border-color: #62ffe1; background: #161616; }
+
+        /* Elemental Theme Coloring */
+        .fire { border-left-color: #ff4444; }
+        .fire .v-name { color: #ff4444; }
         
-        .village-name { font-weight: bold; font-size: 1rem; color: #62ffe1; }
-        .affinity { font-size: 0.7rem; color: #ffcc00; text-transform: uppercase; margin-bottom: 5px; }
-        .description { font-size: 0.75rem; line-height: 1.4; color: #bbb; }
+        .water { border-left-color: #44aaff; }
+        .water .v-name { color: #44aaff; }
+
+        .wind { border-left-color: #62ffe1; }
+        .wind .v-name { color: #62ffe1; }
+
+        .earth { border-left-color: #aa7744; }
+        .earth .v-name { color: #aa7744; }
+
+        .light { border-left-color: #ffffcc; }
+        .light .v-name { color: #ffffcc; }
+
+        .shadow { border-left-color: #bb66ff; }
+        .shadow .v-name { color: #bb66ff; }
+
+        .village-card:hover { background: #151515; transform: scale(1.02); }
+        
+        .v-name { font-weight: bold; font-size: 0.95rem; }
+        .affinity { font-size: 0.65rem; text-transform: uppercase; margin-bottom: 3px; opacity: 0.7; color: #eee; }
+        .description { font-size: 0.7rem; line-height: 1.2; color: #999; }
 
         #gatekeeper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -35,37 +55,43 @@
 
     <div class="game-container">
         <h1>ORIGIN SELECTION</h1>
-        <p class="subtitle">"Your first breath defines your path."</p>
+        <p class="subtitle">"Your choice is final."</p>
 
         <div class="village-list">
-            <div class="village-card" onclick="sealDestiny('Inferno Island', 'Fire')">
-                <div class="village-name">Inferno Island</div>
-                <div class="affinity">Fire</div>
+            <div class="village-card fire" onclick="sealDestiny('Inferno Island', 'Fire')">
+                <div class="affinity">Strong vs Earth | Weak vs Water</div>
+                <div class="v-name">Inferno Island</div>
                 <p class="description">Forged in volcanic ash. Raw power and destructive heat.</p>
             </div>
 
-            <div class="village-card" onclick="sealDestiny('Glacier Reach', 'Water')">
-                <div class="village-name">Glacier Reach</div>
-                <div class="affinity">Water</div>
-                <p class="description">Hardened by frost. Patience and fluid defense.</p>
+            <div class="village-card water" onclick="sealDestiny('Glacier Reach', 'Water')">
+                <div class="affinity">Strong vs Fire | Weak vs Wind</div>
+                <div class="v-name">Glacier Reach</div>
+                <p class="description">Hardened by eternal frost. Fluid defense and patience.</p>
             </div>
 
-            <div class="village-card" onclick="sealDestiny('Storm Peaks', 'Lightning')">
-                <div class="village-name">Storm Peaks</div>
-                <div class="affinity">Lightning</div>
-                <p class="description">Swift strikes and unpredictable movements.</p>
+            <div class="village-card wind" onclick="sealDestiny('Gale Terrace', 'Wind')">
+                <div class="affinity">Strong vs Water | Weak vs Earth</div>
+                <div class="v-name">Gale Terrace</div>
+                <p class="description">Bound to the endless sky. Swift, invisible, and sharp.</p>
             </div>
 
-            <div class="village-card" onclick="sealDestiny('Everglade', 'Earth')">
-                <div class="village-name">Everglade</div>
-                <div class="affinity">Earth</div>
-                <p class="description">Unmatched resilience and steady resolve.</p>
+            <div class="village-card earth" onclick="sealDestiny('Everglade', 'Earth')">
+                <div class="affinity">Strong vs Wind | Weak vs Fire</div>
+                <div class="v-name">Everglade</div>
+                <p class="description">Rooted in ancient soil. Unmatched resilience and resolve.</p>
             </div>
             
-            <div class="village-card" onclick="sealDestiny('Shadow Abyss', 'Shadow')">
-                <div class="village-name">Shadow Abyss</div>
-                <div class="affinity">Shadow</div>
-                <p class="description">Born from darkness. Lethal and unseen.</p>
+            <div class="village-card light" onclick="sealDestiny('Aurelian Sanctum', 'Light')">
+                <div class="affinity">Bane of Shadow | Weak to Shadow</div>
+                <div class="v-name">Aurelian Sanctum</div>
+                <p class="description">Bathed in celestial radiance. Holy, pure, and piercing.</p>
+            </div>
+
+            <div class="village-card shadow" onclick="sealDestiny('Shadow Abyss', 'Shadow')">
+                <div class="affinity">Bane of Light | Weak to Light</div>
+                <div class="v-name">Shadow Abyss</div>
+                <p class="description">Born from the void. Subtle, lethal, and master of darkness.</p>
             </div>
         </div>
     </div>

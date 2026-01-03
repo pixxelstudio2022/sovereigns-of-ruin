@@ -22,6 +22,7 @@
         .ans-btn.wrong { background: #441111 !important; border-color: #ff0000 !important; color: #fff; }
 
         .reward-popup { font-size: 0.7rem; color: #ffcc00; margin-top: 15px; font-weight: bold; opacity: 0; transition: 0.3s; }
+        .limit-popup { color: #ff4444; font-size: 0.65rem; margin-top: 15px; display: none; }
         .back-nav { font-size: 0.7rem; color: #888; cursor: pointer; margin-bottom: 10px; align-self: flex-start; }
     </style>
 </head>
@@ -35,19 +36,18 @@
 
             <div id="questionText">Waiting for the Elder...</div>
             
-            <div class="answers-grid" id="answerButtons">
-                </div>
+            <div class="answers-grid" id="answerButtons"></div>
 
             <div id="rewardMsg" class="reward-popup">+1 GOLD EARNED</div>
+            <div id="limitMsg" class="limit-popup">GOLD LIMIT EXCEEDED FOR THE DAY</div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         
-        // IMPORT THE QUESTIONS FROM EXTERNAL FILE
         import { saQuizPool } from "./questions.js";
 
         const firebaseConfig = {
@@ -65,29 +65,7 @@
 
         let currentUid = null;
         let timerInterval;
-        let timeLeft = 60; // 6 seconds (60 * 100ms)
-
-        // TRACKING LOGIC
-        function getAvailableQuestions() {
-            const answeredToday = JSON.parse(localStorage.getItem('answered_questions') || "[]");
-            const today = new Date().toDateString();
-            
-            // Reset if it's a new day
-            if (localStorage.getItem('last_quiz_date') !== today) {
-                localStorage.setItem('last_quiz_date', today);
-                localStorage.setItem('answered_questions', "[]");
-                return saQuizPool;
-            }
-
-            // Return only questions not yet answered today
-            return saQuizPool.filter((_, index) => !answeredToday.includes(index));
-        }
-
-        function markAsAnswered(index) {
-            const answeredToday = JSON.parse(localStorage.getItem('answered_questions') || "[]");
-            answeredToday.push(index);
-            localStorage.setItem('answered_questions', JSON.stringify(answeredToday));
-        }
+        let timeLeft = 60; 
 
         onAuthStateChanged(auth, (user) => { 
             if (user) { 
@@ -101,20 +79,12 @@
         function nextQuestion() {
             clearInterval(timerInterval);
             document.getElementById('rewardMsg').style.opacity = 0;
+            document.getElementById('limitMsg').style.display = "none";
 
-            const pool = getAvailableQuestions();
-            
-            if (pool.length === 0) {
-                document.getElementById('questionText').innerText = "The Elder is resting. You have answered all of today's riddles! Return tomorrow.";
-                document.getElementById('answerButtons').innerHTML = "";
-                document.getElementById('timerFill').style.width = "0%";
-                return;
-            }
-
-            // Select random question from the available pool
-            const randomIndexInPool = Math.floor(Math.random() * pool.length);
-            const qData = pool[randomIndexInPool];
-            const actualIndex = saQuizPool.indexOf(qData); // Find original index for tracking
+            // Local browser tracking for seen questions (preventing refresh spam)
+            const pool = saQuizPool; 
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const qData = pool[randomIndex];
 
             document.getElementById('questionText').innerText = qData.q;
             const btnContainer = document.getElementById('answerButtons');
@@ -124,13 +94,9 @@
                 const b = document.createElement('button');
                 b.className = "ans-btn";
                 b.innerText = text;
-                b.onclick = () => {
-                    markAsAnswered(actualIndex);
-                    checkAnswer(index, qData.c, b);
-                };
+                b.onclick = () => checkAnswer(index, qData.c, b);
                 btnContainer.appendChild(b);
             });
-
             startTimer();
         }
 
@@ -142,8 +108,6 @@
                 bar.style.width = (timeLeft / 60 * 100) + "%";
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    // Penalize by marking as answered even if they miss the timer? 
-                    // Let's just skip to keep it fast-paced.
                     nextQuestion(); 
                 }
             }, 100);
@@ -156,22 +120,39 @@
 
             if (selected === correct) {
                 btn.classList.add('correct');
-                document.getElementById('rewardMsg').style.opacity = 1;
                 
-                // Add 1 gold to Firestore
                 try {
-                    await updateDoc(doc(db, "players", currentUid), { 
-                        gold: increment(1) 
-                    });
+                    const playerRef = doc(db, "players", currentUid);
+                    const snap = await getDoc(playerRef);
+                    const data = snap.data();
+                    
+                    const today = new Date().toDateString(); // e.g., "Sun Jan 04 2026"
+                    const lastDate = data.lastGoldDate || "";
+                    let currentDailyCount = data.dailyGoldCount || 0;
+
+                    // Reset count if it's a new day (00:00 check)
+                    if (lastDate !== today) {
+                        currentDailyCount = 0;
+                    }
+
+                    if (currentDailyCount < 100) {
+                        await updateDoc(playerRef, { 
+                            gold: increment(1),
+                            dailyGoldCount: increment(1),
+                            lastGoldDate: today
+                        });
+                        document.getElementById('rewardMsg').style.opacity = 1;
+                    } else {
+                        document.getElementById('limitMsg').style.display = "block";
+                    }
                 } catch (e) {
-                    console.error("Gold update failed", e);
+                    console.error("Save failed:", e);
                 }
             } else {
                 btn.classList.add('wrong');
                 allBtns[correct].classList.add('correct');
             }
 
-            // Pause for 1.5 seconds so player sees the answer, then move on
             setTimeout(nextQuestion, 1500);
         }
     </script>

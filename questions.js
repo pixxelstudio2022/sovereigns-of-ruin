@@ -1,31 +1,121 @@
 export const saQuizPool = [
-    // GEOGRAPHY & PLACES
+    // --- GEOGRAPHY & LANDMARKS ---
     { q: "Which SA city is known as the 'Mother City'?", a: ["Durban", "Johannesburg", "Cape Town", "Pretoria"], c: 2 },
     { q: "What is the largest province in South Africa by land area?", a: ["Gauteng", "Northern Cape", "Free State", "Limpopo"], c: 1 },
     { q: "Which river forms the border between SA and Zimbabwe?", a: ["Vaal", "Orange", "Limpopo", "Zambezi"], c: 2 },
     { q: "In which province is the Kruger National Park mainly located?", a: ["Mpumalanga", "KZN", "North West", "Western Cape"], c: 0 },
     { q: "What is the administrative capital of South Africa?", a: ["Cape Town", "Bloemfontein", "Pretoria", "Sandton"], c: 2 },
-    
-    // SPORT (SA PRIDE)
+    { q: "Which mountain range is the highest in South Africa?", a: ["Magaliesberg", "Drakensberg", "Cederberg", "Outeniqua"], c: 1 },
+    { q: "In which province would you find the city of Polokwane?", a: ["North West", "Limpopo", "Mpumalanga", "Gauteng"], c: 1 },
+    { q: "What is the nickname for Johannesburg?", a: ["The Windy City", "The Friendly City", "Egoli", "The Jacaranda City"], c: 2 },
+    { q: "Which ocean is on the West Coast of South Africa?", a: ["Indian", "Atlantic", "Pacific", "Southern"], c: 1 },
+    { q: "What is the smallest province in South Africa?", a: ["Free State", "Gauteng", "Western Cape", "Mpumalanga"], c: 1 },
+
+    // --- SPORT (RUGBY, CRICKET, SOCCER) ---
     { q: "How many Rugby World Cup titles have the Springboks won?", a: ["2", "3", "4", "5"], c: 2 },
     { q: "Who was the captain of the Springboks in 2019 and 2023?", a: ["Siya Kolisi", "Faf de Klerk", "Eben Etzebeth", "Bryan Habana"], c: 0 },
     { q: "What is the nickname for the SA national cricket team?", a: ["Bafana Bafana", "Proteas", "Springboks", "Blitzboks"], c: 1 },
     { q: "In which year did SA host the FIFA World Cup?", a: ["2006", "2008", "2010", "2012"], c: 2 },
     { q: "Which stadium is shaped like a Calabash?", a: ["Ellis Park", "FNB Stadium", "Moses Mabhida", "Newlands"], c: 1 },
+    { q: "Who is the all-time top goalscorer for Bafana Bafana?", a: ["Benni McCarthy", "Percy Tau", "Steven Pienaar", "Siphiwe Tshabalala"], c: 0 },
+    { q: "In Rugby, what is the nickname for the national 7s team?", a: ["Smallboks", "Blitzboks", "Baby Boks", "Fast Boks"], c: 1 },
+    { q: "Which SA swimmer won gold in the 2012 London Olympics 200m fly?", a: ["Penny Heyns", "Chad le Clos", "Ryant Moore", "Cameron van der Burgh"], c: 1 },
+    { q: "What color is the 'Protea' on the national cricket jersey?", a: ["Red", "Yellow", "Gold", "Green"], c: 2 },
+    { q: "Which city is home to the 'Comrades Marathon' finish line?", a: ["Cape Town", "Durban", "Johannesburg", "East London"], c: 1 },
 
-    // FOOD & CULTURE
+    // --- FOOD & CULTURE ---
     { q: "What is 'Chakalaka' usually served with?", a: ["Cereal", "Pap", "Sushi", "Pasta"], c: 1 },
     { q: "What do South Africans call a 'Barbecue'?", a: ["Barbie", "Cook-out", "Braai", "Grill-up"], c: 2 },
     { q: "Which tea is unique to the Cederberg region of SA?", a: ["Earl Grey", "Rooibos", "Green Tea", "Chai"], c: 1 },
     { q: "What is a 'Bunny Chow'?", a: ["Rabbit stew", "Bread filled with curry", "Pet food", "A type of donut"], c: 1 },
     { q: "What are 'Amadumbe'?", a: ["Sweet potatoes", "Yams", "Root vegetables", "Corn"], c: 2 },
+    { q: "Which of these is a popular South African cream liqueur?", a: ["Kahlua", "Amarula", "Baileys", "Sheridans"], c: 1 },
+    { q: "What is the main ingredient in 'Boerewors'?", a: ["Fish", "Chicken", "Beef/Pork", "Soy"], c: 2 },
+    { q: "What kind of dessert is a 'Koeksister'?", a: ["Spiced Cake", "Pudding", "Syrup-coated doughnut", "Fruit tart"], c: 2 },
+    { q: "What is 'Melktert'?", a: ["Cheese cake", "Milk Tart", "Chocolate cake", "Bread pudding"], c: 1 },
+    { q: "Which of these is a famous SA 'street food' sandwich?", a: ["Gatsby", "Slider", "Panini", "Hoagie"], c: 0 },
 
-    // GENERAL KNOWLEDGE & MATH
+    // --- MATH & LOGIC ---
     { q: "What is 12 x 8?", a: ["86", "94", "96", "102"], c: 2 },
     { q: "What is 150 - 75?", a: ["65", "75", "85", "95"], c: 1 },
     { q: "If a pie costs R15 and you buy 3, how much is it?", a: ["R30", "R45", "R50", "R60"], c: 1 },
     { q: "What is 1,000 divided by 4?", a: ["200", "250", "300", "500"], c: 1 },
-    { q: "What is 7 squared?", a: ["14", "42", "49", "56"], c: 2 }
-    
-    // ... [I will continue generating the full 200 list for your production file]
+    { q: "What is 7 squared?", a: ["14", "42", "49", "56"], c: 2 },
+    { q: "What is 15% of 200?", a: ["15", "20", "30", "45"], c: 2 },
+    { q: "How many sides does a heptagon have?", a: ["6", "7", "8", "9"], c: 1 },
+    { q: "What is 99 + 101?", a: ["190", "200", "210", "220"], c: 1 },
+    { q: "What is half of 74?", a: ["32", "35", "37", "39"], c: 2 },
+    { q: "What is 5 x 5 x 5?", a: ["15", "75", "125", "150"], c: 2 },
+
+    // --- GENERAL KNOWLEDGE ---
+    { q: "Who was the first black president of South Africa?", a: ["Thabo Mbeki", "Jacob Zuma", "Nelson Mandela", "Cyril Ramaphosa"], c: 2 },
+    { q: "What is the name of the South African national anthem?", a: ["Nkosi Sikelel' iAfrika", "Die Stem", "God Save the Queen", "Shosholoza"], c: 0 },
+    { q: "What is the animal on the South African R200 note?", a: ["Lion", "Elephant", "Leopard", "Rhino"], c: 2 },
+    { q: "Which SA animal is known as the 'Ghost of the Mountain'?", a: ["Leopard", "Klipspringer", "Snow Leopard", "Caracal"], c: 0 },
+    { q: "Which flower is the national flower of South Africa?", a: ["Rose", "Protea", "Daisy", "Aloe"], c: 1 },
+    { q: "What is the international dialing code for South Africa?", a: ["+1", "+44", "+27", "+254"], c: 2 },
+    { q: "Which month is 'Heritage Day' celebrated in SA?", a: ["April", "June", "September", "December"], c: 2 },
+    { q: "What does the 'S' in 'SAPS' stand for?", a: ["Service", "Safety", "Security", "Squad"], c: 0 },
+    { q: "What is the largest bird in the world, found in SA?", a: ["Eagle", "Ostrich", "Falcon", "Pelican"], c: 1 },
+    { q: "Which year did the Apartheid system officially end?", a: ["1990", "1992", "1994", "1996"], c: 2 },
+
+    // --- HISTORY & FAMOUS FIGURES ---
+    { q: "Which Nobel Peace Prize winner lived on Vilakazi Street in Soweto?", a: ["FW de Klerk", "Desmond Tutu", "Albert Luthuli", "Cyril Ramaphosa"], c: 1 },
+    { q: "Who was the leader of the Zulu Kingdom who fought the British at Isandlwana?", a: ["Shaka Zulu", "Cetshwayo kaMpande", "Dingane", "Zwelithini"], c: 1 },
+    { q: "Which year did the first democratic elections take place in SA?", a: ["1990", "1992", "1994", "1996"], c: 2 },
+    { q: "What was Nelson Mandela's clan name?", a: ["Madiba", "Mkhize", "Khumalo", "Zulu"], c: 0 },
+    { q: "In which year did the Soweto Uprising occur?", a: ["1960", "1976", "1985", "1990"], c: 1 },
+    { q: "Who was the first South African to win an Oscar for Best Actress?", a: ["Charlize Theron", "Thuso Mbedu", "Terry Pheto", "Leleti Khumalo"], c: 0 },
+    { q: "Which SA doctor performed the world's first human heart transplant?", a: ["Sydney Brenner", "Chris Barnard", "Max Theiler", "Allan Cormack"], c: 1 },
+    { q: "Which political party has been in power since 1994?", a: ["DA", "EFF", "ANC", "IFP"], c: 2 },
+    { q: "What is the name of the island where Nelson Mandela was imprisoned?", a: ["Seal Island", "Robben Island", "St. Helena", "Alcatraz"], c: 1 },
+    { q: "Who is known as 'The Face of the 1976 Uprising'?", a: ["Steve Biko", "Hector Pieterson", "Chris Hani", "Oliver Tambo"], c: 1 },
+
+    // --- NATURE & WILDLIFE ---
+    { q: "Which of these is NOT part of the 'Big Five'?", a: ["Rhino", "Giraffe", "Leopard", "Buffalo"], c: 1 },
+    { q: "What is the fastest land animal in South Africa?", a: ["Lion", "Springbok", "Cheetah", "Wild Dog"], c: 2 },
+    { q: "Which tree is known as the 'Upside-down Tree'?", a: ["Yellowwood", "Baobab", "Mopane", "Acacia"], c: 1 },
+    { q: "What is the national animal of South Africa?", a: ["Lion", "Elephant", "Springbok", "Oryx"], c: 2 },
+    { q: "Which shark is most famous for 'breaching' in False Bay?", a: ["Bull Shark", "Great White Shark", "Tiger Shark", "Hammerhead"], c: 1 },
+    { q: "Which SA bird is the largest flying bird in Africa?", a: ["Kori Bustard", "Blue Crane", "Fish Eagle", "Secretary Bird"], c: 0 },
+    { q: "The 'Big Hole' is a famous landmark in which city?", a: ["Johannesburg", "Kimberley", "Upington", "Bloemfontein"], c: 1 },
+    { q: "What is the national bird of South Africa?", a: ["Blue Crane", "Hadeda", "Ostrich", "Falcon"], c: 0 },
+    { q: "What is the name of the cold current that flows past Cape Town?", a: ["Agulhas Current", "Benguela Current", "Mozambique Current", "Gulf Stream"], c: 1 },
+    { q: "Which SA park is world-famous for its Addo Elephants?", a: ["Kruger", "Pilanesberg", "Addo Elephant Park", "Hluhluwe"], c: 2 },
+
+    // --- STREET SMARTS & SLANG ---
+    { q: "If a South African says they will do something 'Now-now', when is it happening?", a: ["Immediately", "In a few minutes/hours", "Never", "Yesterday"], c: 1 },
+    { q: "What is a 'Robot' in South African English?", a: ["An AI machine", "A traffic light", "A vacuum cleaner", "A toy"], c: 1 },
+    { q: "What is the slang word for 'Money'?", a: ["Bucks", "Zaka", "Dough", "Shekels"], c: 1 },
+    { q: "If someone calls you 'Lekker', what do they mean?", a: ["You are mean", "You are cool/good", "You are tired", "You are small"], c: 1 },
+    { q: "What is a 'Bakkie'?", a: ["A small bowl", "A pickup truck", "A type of hat", "A lunch box"], c: 1 },
+    { q: "What is 'Slap Chips'?", a: ["Burnt chips", "Soft, vinegar-soaked fries", "Crisps in a bag", "Potato skins"], c: 1 },
+    { q: "What is a 'Tekkie'?", a: ["A technician", "A sneaker/trainer", "A cell phone", "A remote control"], c: 1 },
+    { q: "If something is 'Kwaai', it is...", a: ["Angry", "Scary", "Excellent/Cool", "Broken"], c: 2 },
+    { q: "What is a 'Gogo'?", a: ["A fast car", "A grandmother", "A type of dance", "A ghost"], c: 1 },
+    { q: "What does 'Eish!' usually express?", a: ["Joy", "Disbelief/Surprise/Frustration", "Hunger", "Sleepiness"], c: 1 },
+
+    // --- GEOGRAPHY & TOWNS ---
+    { q: "Which town is the 'Ostrich Capital' of the world?", a: ["Paarl", "Oudtshoorn", "Knysna", "George"], c: 1 },
+    { q: "Which province is home to the 'Valley of a Thousand Hills'?", a: ["Limpopo", "KwaZulu-Natal", "Eastern Cape", "Free State"], c: 1 },
+    { q: "Which SA city is nicknamed 'The Windy City'?", a: ["Cape Town", "Durban", "Gqeberha (Port Elizabeth)", "East London"], c: 2 },
+    { q: "In which province is the famous Sun City resort located?", a: ["Gauteng", "North West", "Limpopo", "Mpumalanga"], c: 1 },
+    { q: "Which river is the longest in South Africa?", a: ["Vaal", "Orange River", "Fish River", "Tugela"], c: 1 },
+    { q: "The 'Garden Route' is located in which two provinces?", a: ["WC & NC", "WC & EC", "KZN & EC", "Gauteng & NW"], c: 1 },
+    { q: "Which mountain overlooks the city of Cape Town?", a: ["Lion's Head", "Table Mountain", "Signal Hill", "Devil's Peak"], c: 1 },
+    { q: "What is the judicial capital of South Africa?", a: ["Pretoria", "Cape Town", "Bloemfontein", "Johannesburg"], c: 2 },
+    { q: "What is the name of the desert shared by SA, Namibia, and Botswana?", a: ["Sahara", "Namib", "Kalahari", "Karoo"], c: 2 },
+    { q: "Which town is the southernmost point of Africa?", a: ["Cape Point", "Agulhas", "Simon's Town", "Hermanus"], c: 1 },
+
+    // --- QUICK MATH & LOGIC ---
+    { q: "What is 11 x 11?", a: ["111", "121", "131", "141"], c: 1 },
+    { q: "What is 200 minus 45?", a: ["145", "155", "165", "175"], c: 1 },
+    { q: "How many centimeters are in 2 meters?", a: ["20", "200", "2000", "0.2"], c: 1 },
+    { q: "What is 8 + 7 + 6?", a: ["20", "21", "22", "23"], c: 1 },
+    { q: "What is 10% of 500?", a: ["5", "50", "100", "150"], c: 1 },
+    { q: "What is the next number: 2, 4, 8, 16...?", a: ["20", "24", "32", "48"], c: 2 },
+    { q: "What is 1/4 as a percentage?", a: ["10%", "25%", "40%", "50%"], c: 1 },
+    { q: "How many minutes are in 2 and a half hours?", a: ["120", "150", "180", "200"], c: 1 },
+    { q: "What is 9 x 6?", a: ["48", "54", "56", "63"], c: 1 },
+    { q: "What is the square root of 64?", a: ["6", "7", "8", "9"], c: 2 }
 ];

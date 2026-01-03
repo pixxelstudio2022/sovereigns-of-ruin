@@ -13,14 +13,13 @@
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
 
-        /* Compact Top Bar */
+        /* Status & Stats */
         .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; align-items: center; }
         #realTimeClock { color: var(--accent); }
         .top-right-icons { display: flex; gap: 10px; align-items: center; }
-        .settings-btn { cursor: pointer; color: #888; transition: 0.2s; font-size: 1rem; }
+        .settings-btn { cursor: pointer; color: #888; font-size: 1.1rem; transition: 0.2s; }
         .settings-btn:hover { color: var(--accent); }
-
-        /* Header & Stats */
+        
         .stat-header { border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0; }
         .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); }
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
@@ -37,43 +36,40 @@
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
-        /* Optimized Navigation List */
-        .map-locations { display: flex; flex-direction: column; gap: 5px; flex-grow: 1; justify-content: flex-start; overflow: hidden; }
+        /* Navigation List */
+        .map-locations { display: flex; flex-direction: column; gap: 5px; flex-grow: 1; overflow-y: auto; }
+        .map-locations::-webkit-scrollbar { display: none; }
+        .map-locations { -ms-overflow-style: none; scrollbar-width: none; }
+
         .loc-btn {
             background: #0a0a0a; border: 1px solid #222; color: #eee;
-            padding: 6px 10px; border-radius: 5px; cursor: pointer; text-align: left;
-            display: flex; flex-direction: column; justify-content: center; min-height: 40px; 
+            padding: 8px 10px; border-radius: 5px; cursor: pointer; text-align: left;
+            display: flex; flex-direction: column; justify-content: center; min-height: 45px; 
             transition: 0.2s;
         }
         .loc-btn:hover { border-color: var(--accent); background: #111; }
-        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.75rem; }
-        .loc-desc { font-size: 0.55rem; color: #666; line-height: 1.1; margin-top: 1px; }
+        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; }
+        .loc-desc { font-size: 0.55rem; color: #666; line-height: 1.2; margin-top: 2px; }
+        
+        .warning-text { color: #ff4444 !important; font-style: italic; }
 
-        /* Settings Modal Overlay - Restricted to 400px parent */
-        .modal-overlay { 
-            position: absolute; inset: 0; background: #050505; 
-            display: none; flex-direction: column; padding: 20px; z-index: 2000;
-            box-sizing: border-box; border-radius: 8px;
-        }
+        /* Modal Settings Overlay */
+        .modal-overlay { position: absolute; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; border-radius: 8px; }
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; }
         .close-modal { cursor: pointer; color: #888; font-size: 1.2rem; }
-
-        .profile-avatar {
-            width: 50px; height: 50px; background: var(--accent); border-radius: 50%;
-            margin: 0 auto 10px auto; display: flex; justify-content: center; align-items: center;
-            font-size: 1.2rem; color: #000; font-weight: bold;
-        }
-
+        
+        .profile-avatar { width: 50px; height: 50px; background: var(--accent); border-radius: 50%; margin: 0 auto 10px auto; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #000; font-weight: bold; }
+        
+        /* Stats & Medals Grid */
         .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .stat-box { background: #0a0a0a; border: 1px solid #222; padding: 10px; border-radius: 4px; text-align: center; }
         .stat-val { display: block; color: var(--accent); font-weight: bold; font-size: 0.85rem; }
         .stat-lbl { font-size: 0.55rem; color: #555; text-transform: uppercase; }
+        
+        .medal-badge { font-size: 1.2rem; cursor: help; filter: drop-shadow(0 0 2px var(--accent)); }
 
-        .logout-btn { 
-            margin-top: auto; background: transparent; color: #ff4444; border: 1px solid #ff4444; 
-            padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem;
-        }
+        .logout-btn { margin-top: auto; background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
 
         #loading { position: fixed; inset: 0; background: #050505; z-index: 3000; display: flex; justify-content: center; align-items: center; color: var(--accent); font-weight: bold; }
     </style>
@@ -93,6 +89,13 @@
             <div style="text-align: center; margin-bottom: 10px;">
                 <span id="pNameDisplay" style="font-weight: bold; color: var(--accent); font-size: 1rem;">Name</span><br>
                 <span id="pElementDisplay" style="font-size: 0.6rem; color: #666; text-transform: uppercase;">Element</span>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px;">Medal Vault</span>
+                <div id="medalsContainer" style="display: flex; gap: 8px; flex-wrap: wrap; background: #0a0a0a; border: 1px solid #222; padding: 8px; border-radius: 4px; min-height: 40px; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.6rem; color: #333;">No medals earned yet...</span>
+                </div>
             </div>
 
             <div class="profile-stats-grid">
@@ -128,33 +131,37 @@
         </div>
 
         <div class="map-locations">
-            <button class="loc-btn" onclick="window.location.href='chat.html'">
-                <span class="loc-title">Global Echoes</span>
-                <span class="loc-desc">Commune with other survivors.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='minigame.html'">
-                <span class="loc-title">The Elder's Riddle</span>
-                <span class="loc-desc">Out of HP? Play SA trivia to earn Gold.</span>
-            </button>
             <button class="loc-btn" onclick="alert('Training...')">
                 <span class="loc-title">Training Grounds</span>
-                <span class="loc-desc">Upgrade abilities and stats.</span>
+                <span class="loc-desc">Hone your skills and augment your physical vessel.</span>
             </button>
             <button class="loc-btn" onclick="alert('Forge...')">
                 <span class="loc-title">Village Forge</span>
-                <span class="loc-desc">Temper weapons and armor.</span>
+                <span class="loc-desc">Temper your armaments in ancient flames.</span>
             </button>
             <button class="loc-btn" onclick="alert('Bazaar...')">
                 <span class="loc-title">The Bazaar</span>
-                <span class="loc-desc">Exchange Gold and Shards.</span>
+                <span class="loc-desc">Trade your spoils for rare materials.</span>
             </button>
-            <button class="loc-btn" onclick="alert('Quest Board...')">
+            <button class="loc-btn" onclick="alert('Quests...')">
                 <span class="loc-title">Quest Board</span>
-                <span class="loc-desc">Find work to earn coin.</span>
+                <span class="loc-desc">Contractual obligations for those seeking glory.</span>
+            </button>
+            <button class="loc-btn" onclick="window.location.href='chat.html'">
+                <span class="loc-title">Global Echoes</span>
+                <span class="loc-desc">Commune with other survivors across the void.</span>
             </button>
             <button class="loc-btn" onclick="alert('Leaderboard...')">
                 <span class="loc-title">Hall of Sovereigns</span>
-                <span class="loc-desc">Witness the legends of the realm.</span>
+                <span class="loc-desc">Behold the legends whose names still echo.</span>
+            </button>
+            <button class="loc-btn" onclick="alert('RULES: No cheating. No toxicity. No mercy.')">
+                <span class="loc-title">Laws of the Realm</span>
+                <span class="loc-desc warning-text">Violate the sacred laws and watch your soul evaporate into the abyss.</span>
+            </button>
+            <button class="loc-btn" onclick="window.location.href='minigame.html'">
+                <span class="loc-title">The Elder's Riddle</span>
+                <span class="loc-desc">Wounded? Master South African trivia to earn Gold while you heal.</span>
             </button>
         </div>
     </div>
@@ -179,17 +186,24 @@
 
         window.toggleModal = () => {
             const m = document.getElementById('profileModal');
-            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         };
 
-        setInterval(() => { document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        setInterval(() => { 
+            document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); 
+        }, 1000);
+
         async function checkPing() {
-            const s = Date.now();
-            try { await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors' });
-                document.getElementById('pingDisplay').innerText = Date.now() - s;
-            } catch (e) {}
+            const start = Date.now();
+            try {
+                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+                document.getElementById('pingDisplay').innerText = Date.now() - start;
+            } catch (e) {
+                document.getElementById('pingDisplay').innerText = "??";
+            }
         }
         setInterval(checkPing, 3000);
+        checkPing();
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -198,6 +212,7 @@
                     const data = docSnap.data();
                     const s = data.stats;
 
+                    // Update UI
                     document.getElementById('pName').innerText = data.name;
                     document.getElementById('pLvl').innerText = data.level;
                     document.getElementById('pGold').innerText = data.gold;
@@ -210,6 +225,7 @@
                     document.getElementById('expBar').style.width = ((data.exp || 0) / (data.level * 100) * 100) + "%";
                     document.getElementById('expLabel').innerText = `EXP: ${data.exp || 0}/${data.level * 100}`;
 
+                    // Update Profile Modal
                     document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
                     document.getElementById('pNameDisplay').innerText = data.name;
                     document.getElementById('pElementDisplay').innerText = data.element;
@@ -218,13 +234,32 @@
                     document.getElementById('mod-gold').innerText = data.gold;
                     document.getElementById('mod-shards').innerText = data.shards || 0;
 
+                    // Handle Medals
+                    const medalsContainer = document.getElementById('medalsContainer');
+                    const playerMedals = data.medals || []; 
+                    if (playerMedals.length > 0) {
+                        medalsContainer.innerHTML = "";
+                        const icons = { "Scholar": "🎓", "Warrior": "⚔️", "Rich": "💰", "Survivor": "🩸" };
+                        playerMedals.forEach(medal => {
+                            const mSpan = document.createElement('span');
+                            mSpan.className = "medal-badge";
+                            mSpan.title = medal; 
+                            mSpan.innerText = icons[medal] || "🏅";
+                            medalsContainer.appendChild(mSpan);
+                        });
+                    }
+
                     document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     document.getElementById('loading').style.display = 'none';
                 }
-            } else { window.location.href = "index.html"; }
+            } else { 
+                window.location.href = "index.html"; 
+            }
         });
 
-        document.getElementById('logoutBtn').onclick = () => signOut(auth).then(() => window.location.href = "index.html");
+        document.getElementById('logoutBtn').onclick = () => {
+            signOut(auth).then(() => window.location.href = "index.html");
+        };
     </script>
 </body>
 </html>

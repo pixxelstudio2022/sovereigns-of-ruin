@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Elder's Riddle - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .quiz-container { flex-grow: 1; display: flex; flex-direction: column; text-align: center; padding: 10px; }
+        .timer-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+        #timerFill { width: 100%; height: 100%; background: #62ffe1; transition: width 0.1s linear; }
+        
+        #questionText { font-size: 0.95rem; margin-bottom: 20px; min-height: 60px; color: #eee; line-height: 1.4; }
+        .answers-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .ans-btn { 
+            background: #111; border: 1px solid #333; color: #ccc; 
+            padding: 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .ans-btn:hover:not(:disabled) { border-color: #62ffe1; background: #1a1a1a; }
+        .ans-btn.correct { background: #114411 !important; border-color: #00ff00 !important; color: #fff; }
+        .ans-btn.wrong { background: #441111 !important; border-color: #ff0000 !important; color: #fff; }
+
+        .reward-popup { font-size: 0.7rem; color: #ffcc00; margin-top: 15px; font-weight: bold; opacity: 0; transition: 0.3s; }
+        .back-nav { font-size: 0.7rem; color: #888; cursor: pointer; margin-bottom: 10px; align-self: flex-start; }
+    </style>
+</head>
+<body class="theme-Wind"> 
+    <div class="game-container">
+        <div class="back-nav" onclick="window.location.href='map.html'">← Return to Village</div>
+        
+        <div class="quiz-container">
+            <div style="font-size: 0.6rem; color: #555; margin-bottom: 5px; letter-spacing: 1px;">TIME REMAINING</div>
+            <div class="timer-bar"><div id="timerFill"></div></div>
+
+            <div id="questionText">Waiting for the Elder...</div>
+            
+            <div class="answers-grid" id="answerButtons">
+                </div>
+
+            <div id="rewardMsg" class="reward-popup">+1 GOLD EARNED</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // IMPORT THE QUESTIONS FROM EXTERNAL FILE
+        import { saQuizPool } from "./questions.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUid = null;
+        let timerInterval;
+        let timeLeft = 60; // 6 seconds (60 * 100ms)
+
+        // TRACKING LOGIC
+        function getAvailableQuestions() {
+            const answeredToday = JSON.parse(localStorage.getItem('answered_questions') || "[]");
+            const today = new Date().toDateString();
+            
+            // Reset if it's a new day
+            if (localStorage.getItem('last_quiz_date') !== today) {
+                localStorage.setItem('last_quiz_date', today);
+                localStorage.setItem('answered_questions', "[]");
+                return saQuizPool;
+            }
+
+            // Return only questions not yet answered today
+            return saQuizPool.filter((_, index) => !answeredToday.includes(index));
+        }
+
+        function markAsAnswered(index) {
+            const answeredToday = JSON.parse(localStorage.getItem('answered_questions') || "[]");
+            answeredToday.push(index);
+            localStorage.setItem('answered_questions', JSON.stringify(answeredToday));
+        }
+
+        onAuthStateChanged(auth, (user) => { 
+            if (user) { 
+                currentUid = user.uid; 
+                nextQuestion(); 
+            } else { 
+                window.location.href = "index.html"; 
+            }
+        });
+
+        function nextQuestion() {
+            clearInterval(timerInterval);
+            document.getElementById('rewardMsg').style.opacity = 0;
+
+            const pool = getAvailableQuestions();
+            
+            if (pool.length === 0) {
+                document.getElementById('questionText').innerText = "The Elder is resting. You have answered all of today's riddles! Return tomorrow.";
+                document.getElementById('answerButtons').innerHTML = "";
+                document.getElementById('timerFill').style.width = "0%";
+                return;
+            }
+
+            // Select random question from the available pool
+            const randomIndexInPool = Math.floor(Math.random() * pool.length);
+            const qData = pool[randomIndexInPool];
+            const actualIndex = saQuizPool.indexOf(qData); // Find original index for tracking
+
+            document.getElementById('questionText').innerText = qData.q;
+            const btnContainer = document.getElementById('answerButtons');
+            btnContainer.innerHTML = "";
+
+            qData.a.forEach((text, index) => {
+                const b = document.createElement('button');
+                b.className = "ans-btn";
+                b.innerText = text;
+                b.onclick = () => {
+                    markAsAnswered(actualIndex);
+                    checkAnswer(index, qData.c, b);
+                };
+                btnContainer.appendChild(b);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 60;
+            const bar = document.getElementById('timerFill');
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                bar.style.width = (timeLeft / 60 * 100) + "%";
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    // Penalize by marking as answered even if they miss the timer? 
+                    // Let's just skip to keep it fast-paced.
+                    nextQuestion(); 
+                }
+            }, 100);
+        }
+
+        async function checkAnswer(selected, correct, btn) {
+            clearInterval(timerInterval);
+            const allBtns = document.querySelectorAll('.ans-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (selected === correct) {
+                btn.classList.add('correct');
+                document.getElementById('rewardMsg').style.opacity = 1;
+                
+                // Add 1 gold to Firestore
+                try {
+                    await updateDoc(doc(db, "players", currentUid), { 
+                        gold: increment(1) 
+                    });
+                } catch (e) {
+                    console.error("Gold update failed", e);
+                }
+            } else {
+                btn.classList.add('wrong');
+                allBtns[correct].classList.add('correct');
+            }
+
+            // Pause for 1.5 seconds so player sees the answer, then move on
+            setTimeout(nextQuestion, 1500);
+        }
+    </script>
+</body>
+</html>

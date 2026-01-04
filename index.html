@@ -66,8 +66,16 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            setPersistence,
+            browserSessionPersistence 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // Added updateDoc to imports
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
@@ -82,7 +90,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 1. Auto-Redirect Logic if already logged in
+        // 1. Auto-Redirect Logic
         onAuthStateChanged(auth, async (user) => {
             if (user && user.emailVerified) {
                 const playerRef = doc(db, "players", user.uid);
@@ -98,40 +106,46 @@
             }
         });
 
-        // 2. Login Handler
+        // 2. Updated Login Handler
         document.getElementById('btnLogin').onclick = async () => {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
             const errBox = document.getElementById('errorBox');
 
             try {
+                // 1. Set persistence so closing the tab logs you out next time
+                await setPersistence(auth, browserSessionPersistence);
+
+                // 2. Authenticate the user
                 const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // CHECK EMAIL VERIFICATION
                 if (!user.emailVerified) {
                     errBox.innerText = "Please verify your soul via email link.";
                     errBox.style.display = "block";
-                    await signOut(auth); // Kick out if not verified
+                    await signOut(auth);
                     return;
                 }
 
-                // CHECK PLAYER DATA
+                // 3. FORCE UPDATE: Clear the 'isOnline' block
                 const playerRef = doc(db, "players", user.uid);
-                const snap = await getDoc(playerRef);
+                
+                await updateDoc(playerRef, {
+                    isOnline: true, 
+                    lastActive: new Date().getTime() 
+                });
 
+                // 4. Proceed to the game
+                const snap = await getDoc(playerRef);
                 if (snap.exists()) {
                     const data = snap.data();
-                    if (data.element) {
-                        window.location.href = "map.html";
-                    } else {
-                        window.location.href = "selection.html";
-                    }
+                    window.location.href = data.element ? "map.html" : "selection.html";
                 }
 
             } catch (error) {
                 errBox.innerText = "Invalid credentials or soul not found.";
                 errBox.style.display = "block";
+                console.error(error);
             }
         };
     </script>

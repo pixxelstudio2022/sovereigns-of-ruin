@@ -35,7 +35,7 @@
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
         .resource-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-        .bar-container { background: #111; height: 10px; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; }
+        .bar-container { background: #111; height: 100%; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; height: 10px; }
         .bar-fill { height: 100%; transition: width 0.5s ease; }
         .hp-fill { background: #ff4444; }
         .mana-fill { background: #44aaff; }
@@ -135,18 +135,22 @@
                 <span class="loc-title">Training Grounds</span>
                 <span class="loc-desc">Hone your physical vessel and augment core attributes.</span>
             </button>
+
             <button class="loc-btn" onclick="window.location.href='forge.html'">
                 <span class="loc-title">Village Forge</span>
                 <span class="loc-desc">Temper armaments in the ancient fires of the Old World.</span>
             </button>
+
             <button class="loc-btn" onclick="window.location.href='chat.html'">
                 <span class="loc-title">Global Echoes</span>
                 <span class="loc-desc">Commune with other survivors across the fractured realms.</span>
             </button>
+
             <button class="loc-btn" onclick="window.location.href='minigame.html'">
                 <span class="loc-title">The Elder's Riddle</span>
                 <span class="loc-desc">Answer South African lore to earn Gold while you mend.</span>
             </button>
+
             <button class="loc-btn" onclick="alert('Laws: No mercy. No toxicity. No cheating.')">
                 <span class="loc-title">Laws of the Realm</span>
                 <span class="loc-desc" style="color:#ff4444; font-style:italic;">Violate the laws and watch your soul evaporate.</span>
@@ -157,7 +161,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = {
@@ -173,24 +177,48 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.toggleModal = () => {
-            const m = document.getElementById('profileModal');
-            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-        };
+        // --- NEW SECURITY LOGIC ---
+        let idleTimer;
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                alert("The Void reclaimed you due to inactivity.");
+                handleLogout();
+            }, 5 * 60 * 1000); 
+        }
 
-        setInterval(() => { 
-            document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); 
-        }, 1000);
+        function startHeartbeat(uid) {
+            setInterval(() => {
+                updateDoc(doc(db, "players", uid), {
+                    lastActive: new Date().getTime(),
+                    isOnline: true
+                }).catch(() => {});
+            }, 30000); 
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 initSecurity(db, auth, user);
                 setupLiveListener(user.uid);
+                startHeartbeat(user.uid); // FIXED: Keep session alive
+                resetIdleTimer(); // FIXED: 5-min logout
+
+                ['mousedown', 'mousemove', 'keypress', 'touchstart'].forEach(evt => 
+                    window.addEventListener(evt, resetIdleTimer));
             } else {
                 window.location.href = "index.html";
             }
         });
 
+        async function handleLogout() {
+            if (auth.currentUser) {
+                await updateDoc(doc(db, "players", auth.currentUser.uid), { isOnline: false });
+                await signOut(auth);
+            }
+            window.location.href = "index.html";
+        }
+
+        // --- HUD LOGIC ---
         function setupLiveListener(uid) {
             onSnapshot(doc(db, "players", uid), (snap) => {
                 if (snap.exists()) {
@@ -209,9 +237,8 @@
                     document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
                     
                     const expReq = lvl === 0 ? 50 : lvl * 100;
-                    const currentXP = data.xp || 0;
-                    document.getElementById('expBar').style.width = (Math.min(currentXP / expReq, 1) * 100) + "%";
-                    document.getElementById('expLabel').innerText = `EXP: ${currentXP}/${expReq}`;
+                    document.getElementById('expBar').style.width = (Math.min((data.xp || 0) / expReq, 1) * 100) + "%";
+                    document.getElementById('expLabel').innerText = `EXP: ${data.xp || 0}/${expReq}`;
 
                     document.getElementById('mod-name').innerText = data.name;
                     document.getElementById('mod-element').innerText = data.element;
@@ -227,8 +254,14 @@
             });
         }
 
-        document.getElementById('logoutBtn').onclick = () => {
-            signOut(auth).then(() => window.location.href = "index.html");
+        setInterval(() => { 
+            document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); 
+        }, 1000);
+
+        document.getElementById('logoutBtn').onclick = handleLogout;
+        window.toggleModal = () => {
+            const m = document.getElementById('profileModal');
+            m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         };
 
         async function checkPing() {

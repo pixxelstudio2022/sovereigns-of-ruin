@@ -4,41 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forge Identity - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { background-color: #050505; color: #eee; font-family: 'Verdana', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .form-container { width: 100%; max-width: 400px; padding: 30px; background: #0a0a0a; border: 1px solid #222; border-radius: 8px; text-align: center; }
-        h2 { color: #62ffe1; letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; }
-        input { width: 100%; background: #111; border: 1px solid #333; color: #fff; padding: 12px; margin: 10px 0; border-radius: 4px; box-sizing: border-box; }
+        .auth-card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            width: 320px;
+            margin: auto;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
         input:focus { border-color: #62ffe1; outline: none; }
-        .btn-reg { width: 100%; background: #62ffe1; color: #000; border: none; padding: 14px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; }
-        .error-msg { color: #ff5555; font-size: 0.8rem; margin-top: 10px; min-height: 1.2em; }
-        .success-box { display: none; padding: 20px; border: 1px solid #62ffe1; }
+        .primary-btn {
+            width: 100%;
+            padding: 15px;
+            background: #62ffe1;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .error-msg { color: #ff4444; font-size: 0.75rem; margin-top: 10px; display: none; min-height: 1.2em; }
+        .success-box { display: none; }
+        .success-box p { font-size: 0.85rem; line-height: 1.6; color: #ccc; }
+        .success-box strong { color: #62ffe1; }
+        .back-link { font-size: 0.75rem; margin-top: 20px; color: #666; text-decoration: none; display: inline-block; }
+        .back-link:hover { color: #62ffe1; }
     </style>
 </head>
 <body>
+    <div class="game-container" style="width: 400px; margin: 0 auto;">
+        <div class="auth-card" id="regForm">
+            <h2 style="letter-spacing: 2px; color: #62ffe1; text-transform: uppercase;">Forge Identity</h2>
+            
+            <input type="text" id="regName" placeholder="Sovereign Name (Max 15 chars)" maxlength="15">
+            <input type="email" id="regEmail" placeholder="Email Address">
+            <input type="password" id="regPass" placeholder="Password (Min 6 chars)">
+            <input type="password" id="regConfirm" placeholder="Confirm Password">
 
-    <div class="form-container" id="regForm">
-        <h2>FORGE IDENTITY</h2>
-        <input type="text" id="playerName" placeholder="Sovereign Name (Max 15 chars)" maxlength="15">
-        <input type="email" id="email" placeholder="Valid Email Address">
-        <input type="password" id="password" placeholder="Password (Min 6 chars)">
-        <input type="password" id="confirmPassword" placeholder="Confirm Password">
-        
-        <div id="errorBox" class="error-msg"></div>
-        <button class="btn-reg" id="submitReg">Begin Authentication</button>
-        <p style="font-size: 0.8rem; margin-top: 15px;">
-            <a href="index.html" style="color: #62ffe1; text-decoration: none;">Return to Login</a>
-        </p>
-    </div>
+            <div id="errorBox" class="error-msg"></div>
 
-    <div class="form-container success-box" id="successBox">
-        <h2 style="font-size: 1.2rem;">IDENTITY FORGED!</h2>
-        <p style="font-size: 0.9rem; line-height: 1.5;">
-            A verification link has been sent to your email. 
-            Check your <strong>inbox or SPAM</strong> folder.
-        </p>
-        <p style="font-size: 0.8rem; color: #888;">You cannot enter the ruin until your soul is verified.</p>
-        <button class="btn-reg" onclick="window.location.href='index.html'">Return to Login</button>
+            <button class="primary-btn" id="submitReg">Begin Authentication</button>
+            <a href="index.html" class="back-link">Return to Login</a>
+        </div>
+
+        <div class="auth-card success-box" id="successBox">
+            <h2 style="color: #62ffe1; text-transform: uppercase;">Identity Forged</h2>
+            <p>A verification link has been sent to your email.<br>Check your <strong>inbox or SPAM</strong> folder.</p>
+            <p style="color: #666; font-size: 0.7rem; margin-top: 10px;">You cannot enter the ruin until your soul is verified.</p>
+            <button class="primary-btn" onclick="window.location.href='index.html'">Return to Login</button>
+        </div>
     </div>
 
     <script type="module">
@@ -60,48 +90,74 @@
         const db = getFirestore(app);
 
         document.getElementById('submitReg').onclick = async () => {
-            const name = document.getElementById('playerName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
-            const confirmPass = document.getElementById('confirmPassword').value;
-            const errorBox = document.getElementById('errorBox');
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPass').value;
+            const confirm = document.getElementById('regConfirm').value;
+            const errBox = document.getElementById('errorBox');
 
-            // 1. Validate Sovereign Name
+            // 1. Client-Side Validation
             const nameRegex = /^[a-zA-Z0-9]+$/;
-            const forbiddenNames = ["admin", "adm1n", "administrator", "system", "owner"];
-            
             if (!name || name.length > 15 || !nameRegex.test(name)) {
-                return errorBox.innerText = "Name must be alphanumeric and max 15 chars.";
+                errBox.innerText = "Alphanumeric names only (max 15).";
+                errBox.style.display = "block"; return;
             }
-            if (forbiddenNames.some(f => name.toLowerCase().includes(f))) {
-                return errorBox.innerText = "This Sovereign Name is forbidden.";
+            if (pass.length < 6) {
+                errBox.innerText = "Password must be at least 6 characters.";
+                errBox.style.display = "block"; return;
             }
-
-            // 2. Validate Password
-            if (pass.length < 6) return errorBox.innerText = "Password must be at least 6 chars.";
-            if (pass !== confirmPass) return errorBox.innerText = "Passwords do not match.";
+            if (pass !== confirm) {
+                errBox.innerText = "Passwords do not match.";
+                errBox.style.display = "block"; return;
+            }
 
             try {
-                // 3. Unique Name Check in Firestore
-                const lowerName = name.toLowerCase();
-                const nameRef = doc(db, "usernames", lowerName);
+                // 2. Username Uniqueness Check
+                const nameRef = doc(db, "usernames", name.toLowerCase());
                 const nameSnap = await getDoc(nameRef);
-
                 if (nameSnap.exists()) {
-                    return errorBox.innerText = "This name has already been claimed.";
+                    errBox.innerText = "This name is already claimed.";
+                    errBox.style.display = "block"; return;
                 }
 
-                // 4. Create Account and Send Verification
+                // 3. Create Auth User
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                await updateProfile(userCredential.user, { displayName: name });
-                await setDoc(nameRef, { uid: userCredential.user.uid });
-                await sendEmailVerification(userCredential.user);
-                await signOut(auth); // Log out until they verify
+                const user = userCredential.user;
 
+                // 4. Update Profile & Create Firestore Records
+                await updateProfile(user, { displayName: name });
+                
+                // Reserve the username
+                await setDoc(nameRef, { uid: user.uid });
+
+                // Create the Player Doc
+                // LEVEL SET TO 0: New players start as unranked vessels
+                await setDoc(doc(db, "players", user.uid), {
+                    name: name,
+                    element: null, 
+                    level: 0, 
+                    xp: 0,
+                    gold: 0,
+                    shards: 0,
+                    dailyGoldCount: 0,
+                    lastGoldDate: new Date().toDateString(),
+                    stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50 }
+                });
+
+                // 5. Email Verification
+                await sendEmailVerification(user);
+
+                // 6. Sign out immediately to prevent auto-redirect by other page listeners
+                await signOut(auth); 
+
+                // 7. Show Success View
                 document.getElementById('regForm').style.display = 'none';
                 document.getElementById('successBox').style.display = 'block';
-            } catch (err) {
-                errorBox.innerText = err.message;
+
+            } catch (error) {
+                console.error("Registration failed:", error);
+                errBox.innerText = error.message;
+                errBox.style.display = "block";
             }
         };
     </script>

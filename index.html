@@ -3,121 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereigns of Ruin - Enter the Void</title>
+    <title>Login - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { 
-            background-color: #050505; 
-            color: #eee; 
-            font-family: 'Verdana', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        .landing-container {
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            padding: 20px;
-            background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
-            border: 1px solid #222;
+        .login-card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 320px;
+            margin: auto;
+            text-align: center;
         }
-
-        h1 {
-            color: #62ffe1;
-            font-size: 1.8rem;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(98, 255, 225, 0.3);
-            margin-bottom: 10px;
-        }
-
-        .lore-text {
-            font-style: italic;
-            font-size: 0.9rem;
-            color: #888;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            padding: 0 10px;
-        }
-
-        .auth-box {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
         input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
             background: #111;
             border: 1px solid #333;
             color: #fff;
-            padding: 12px;
             border-radius: 4px;
-            outline: none;
-            transition: border-color 0.3s;
+            box-sizing: border-box;
         }
-
-        input:focus { border-color: #62ffe1; }
-
-        .btn-main {
+        input:focus { border-color: #62ffe1; outline: none; }
+        .primary-btn {
+            width: 100%;
+            padding: 15px;
             background: #62ffe1;
             color: #000;
-            border: none;
-            padding: 14px;
             font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
+            border: none;
             border-radius: 4px;
-            transition: 0.2s;
-        }
-
-        .btn-main:hover { background: #4adbbd; transform: translateY(-1px); }
-
-        .toggle-auth {
-            font-size: 0.8rem;
-            color: #666;
-            cursor: pointer;
             margin-top: 10px;
-            text-decoration: underline;
+            cursor: pointer;
+            text-transform: uppercase;
         }
-
-        .error-msg {
-            color: #ff5555;
-            font-size: 0.8rem;
-            min-height: 1.2em;
-            line-height: 1.4;
-            padding: 5px;
+        .secondary-btn {
+            background: none;
+            border: 1px solid #333;
+            color: #888;
+            margin-top: 10px;
         }
+        .error-msg { color: #ff4444; font-size: 0.75rem; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
+    <div class="game-container" style="width: 400px; margin: 0 auto;">
+        <div class="login-card">
+            <h2 style="letter-spacing: 4px; color: #62ffe1; margin-bottom: 20px;">SOVEREIGNS <br>OF RUIN</h2>
+            
+            <input type="email" id="loginEmail" placeholder="Email Address">
+            <input type="password" id="loginPass" placeholder="Password">
 
-    <div class="landing-container">
-        <h1>SOVEREIGNS OF RUIN</h1>
-        
-        <p class="lore-text">
-            "The ancient seals have cracked. Darkness bleeds into the edges of the world, 
-            and the Sovereigns have claimed the wild lands. You are a shadow of your 
-            former self, seeking to reclaim what was lost in the ash."
-        </p>
+            <div id="errorBox" class="error-msg"></div>
 
-        <div class="auth-box">
-            <h3 id="authTitle" style="font-size: 0.9rem; color: #62ffe1;">RECLAIM YOUR SOUL (Login)</h3>
-            <input type="email" id="email" placeholder="Email Address">
-            <input type="password" id="password" placeholder="Password">
-            <div id="errorDisplay" class="error-msg"></div>
-            <button class="btn-main" id="authBtn">Enter the Ruin</button>
-            <a href="register.html" class="toggle-auth">New survivor? Create a profile</a>
+            <button class="primary-btn" id="btnLogin">Enter the Ruin</button>
+            
+            <p style="font-size: 0.75rem; margin-top: 20px; color: #444;">NEW SOVEREIGN?</p>
+            <button class="primary-btn secondary-btn" onclick="window.location.href='register.html'">Forge Identity</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
@@ -130,50 +80,58 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        const authBtn = document.getElementById('authBtn');
-        const errorDisplay = document.getElementById('errorDisplay');
-
-        authBtn.onclick = async () => {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-
-            // Reset error message
-            errorDisplay.innerText = "";
-
-            if(!email || !password) {
-                errorDisplay.innerText = "The void requires both email and password.";
-                return;
+        // 1. Auto-Redirect Logic if already logged in
+        onAuthStateChanged(auth, async (user) => {
+            if (user && user.emailVerified) {
+                const playerRef = doc(db, "players", user.uid);
+                const snap = await getDoc(playerRef);
+                
+                if (snap.exists()) {
+                    if (snap.data().element) {
+                        window.location.href = "map.html";
+                    } else {
+                        window.location.href = "selection.html";
+                    }
+                }
             }
+        });
+
+        // 2. Login Handler
+        document.getElementById('btnLogin').onclick = async () => {
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const errBox = document.getElementById('errorBox');
 
             try {
-                // 1. Attempt Sign-In
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // 2. CHECK IF EMAIL IS VERIFIED
+                // CHECK EMAIL VERIFICATION
                 if (!user.emailVerified) {
-                    errorDisplay.style.color = "#ffcc00"; // Yellow warning for verification
-                    errorDisplay.innerText = "Your soul is not yet verified. Please click the link sent to your email (check Spam folder).";
-                    
-                    // Force logout so the session doesn't stay open while unverified
-                    await signOut(auth);
+                    errBox.innerText = "Please verify your soul via email link.";
+                    errBox.style.display = "block";
+                    await signOut(auth); // Kick out if not verified
                     return;
                 }
 
-                // 3. SUCCESSFUL LOGIN
-                // User is verified, send them to the Selection Page
-                window.location.href = "selection.html";
+                // CHECK PLAYER DATA
+                const playerRef = doc(db, "players", user.uid);
+                const snap = await getDoc(playerRef);
+
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.element) {
+                        window.location.href = "map.html";
+                    } else {
+                        window.location.href = "selection.html";
+                    }
+                }
 
             } catch (error) {
-                // Handle wrong passwords, non-existent users, etc.
-                errorDisplay.style.color = "#ff5555";
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found') {
-                    errorDisplay.innerText = "Invalid credentials. Are you sure you exist in this realm?";
-                } else {
-                    errorDisplay.innerText = "Authentication failed. Check your connection or credentials.";
-                }
-                console.error("Login Error:", error.message);
+                errBox.innerText = "Invalid credentials or soul not found.";
+                errBox.style.display = "block";
             }
         };
     </script>

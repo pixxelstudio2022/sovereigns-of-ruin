@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wildlands - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .wildlands-container { padding: 20px; text-align: center; max-width: 400px; margin: 0 auto; }
+        
+        .monster-area {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .battle-log {
+            height: 150px;
+            background: #000;
+            border: 1px solid #222;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 0.7rem;
+            text-align: left;
+            overflow-y: auto;
+            color: #888;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .xp-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #111;
+            border-radius: 5px;
+            margin: 15px 0;
+            border: 1px solid #333;
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: #3498db; /* Blue for XP */
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .fight-btn {
+            background: #8e44ad;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            letter-spacing: 2px;
+        }
+
+        .fight-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .back-nav { font-size: 0.7rem; color: #888; cursor: pointer; margin-bottom: 20px; display: inline-block; }
+    </style>
+</head>
+<body id="bodyTheme">
+
+    <div class="game-container" style="width: 400px; margin: 0 auto;">
+        <div class="back-nav" onclick="window.location.href='map.html'">← Retreat to Safety</div>
+
+        <div class="wildlands-container">
+            <h2 style="letter-spacing: 3px; color: #e74c3c;">THE WILDLANDS</h2>
+            <p style="font-size: 0.65rem; color: #888;">Slay monsters to grow your Sovereign power.</p>
+
+            <div class="monster-area">
+                <div id="monster-sprite" style="font-size: 3rem; margin-bottom: 10px;">👾</div>
+                <div id="monster-name" style="font-weight: bold; letter-spacing: 1px;">SHADOW CREEPER</div>
+                <div style="font-size: 0.6rem; color: #666;">Level 1 Monster</div>
+
+                <div class="xp-bar-container">
+                    <div id="xp-fill" class="xp-fill"></div>
+                </div>
+                <div id="xp-text" style="font-size: 0.6rem; color: #aaa;">XP: 0 / 100</div>
+
+                <button class="fight-btn" id="attackBtn" onclick="attackMonster()">ATTACK</button>
+            </div>
+
+            <div class="battle-log" id="battleLog">
+                Ready for battle...
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        // Firebase Config (Your existing config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let pData = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                initSecurity(db, auth, user);
+                const playerRef = doc(db, "players", user.uid);
+                onSnapshot(playerRef, (snap) => {
+                    if (snap.exists()) {
+                        pData = snap.data();
+                        updateXPUI();
+                    }
+                });
+            } else { window.location.href = "index.html"; }
+        });
+
+        function updateXPUI() {
+            const xpNeeded = (pData.level + 1) * 100;
+            const percent = (pData.xp / xpNeeded) * 100;
+            document.getElementById('xp-fill').style.width = percent + "%";
+            document.getElementById('xp-text').innerText = `XP: ${Math.floor(pData.xp)} / ${xpNeeded}`;
+        }
+
+        window.attackMonster = async () => {
+            const btn = document.getElementById('attackBtn');
+            const log = document.getElementById('battleLog');
+            btn.disabled = true;
+
+            // Simple Click Logic for now: Each kill = 20 XP
+            // To reach Level 1 (100 XP), they need 5 kills.
+            const gainedXP = 20; 
+            
+            log.innerHTML = `<div style="color:white">> You attacked Shadow Creeper!</div>` + log.innerHTML;
+            log.innerHTML = `<div style="color:#3498db">> Monster Slain! Gained ${gainedXP} XP.</div>` + log.innerHTML;
+
+            try {
+                await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                    xp: increment(gainedXP)
+                });
+            } catch (e) { console.error(e); }
+
+            setTimeout(() => { btn.disabled = false; }, 1000);
+        };
+    </script>
+</body>
+</html>

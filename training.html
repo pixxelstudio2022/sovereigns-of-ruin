@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Grounds - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Mobile-First Window */
+        body { background: #000; margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
+        .game-container { width: 400px; min-height: 100vh; background: #000; padding: 15px; box-sizing: border-box; }
+
+        /* Dynamic Themes from Auth-Guard */
+        .theme-Fire { --accent: #ff4444; }
+        .theme-Water { --accent: #44aaff; }
+        .theme-Wind { --accent: #62ffe1; }
+        .theme-Earth { --accent: #aa7744; }
+        .theme-Light { --accent: #ffffcc; }
+        .theme-Shadow { --accent: #bb66ff; }
+
+        .training-container { padding: 10px; text-align: center; }
+        
+        /* Gold Banner - Thematic */
+        .gold-banner {
+            background: #0a0a0a; padding: 12px; border-radius: 6px;
+            margin-bottom: 25px; border: 1px solid #1a1a1a; font-size: 0.8rem; color: #666;
+            letter-spacing: 1px;
+        }
+        .gold-banner span { color: var(--accent); font-weight: bold; }
+
+        /* Stat Cards */
+        .stat-card { 
+            background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; 
+            padding: 18px; margin-bottom: 15px; display: flex; 
+            flex-direction: column; transition: 0.3s;
+        }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .stat-info { text-align: left; }
+        .stat-label { font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+        .stat-value { font-size: 1.2rem; font-weight: bold; color: #eee; }
+        .stat-lvl { color: var(--accent); font-weight: bold; }
+        
+        /* Action Button */
+        .upgrade-btn { 
+            background: var(--accent); color: #000; border: none; 
+            padding: 10px 18px; border-radius: 4px; font-weight: bold; 
+            cursor: pointer; font-size: 0.7rem; transition: 0.2s; letter-spacing: 1px;
+        }
+        .upgrade-btn:hover { filter: brightness(1.2); }
+        .upgrade-btn:disabled { background: #1a1a1a; color: #444; cursor: not-allowed; opacity: 0.6; }
+
+        .req-hint { font-size: 0.55rem; color: #444; margin-top: 5px; display: block; font-style: italic; }
+
+        /* Progress Bar */
+        .progress-box { width: 100%; margin-top: 15px; display: none; }
+        .progress-bg { width: 100%; height: 8px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #1a1a1a; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s linear; }
+        .timer-text { font-size: 0.6rem; color: #666; margin-top: 8px; letter-spacing: 1px; }
+
+        /* Nav */
+        .back-nav { font-size: 0.7rem; color: #444; cursor: pointer; margin-bottom: 20px; display: inline-block; transition: 0.2s; }
+        .back-nav:hover { color: var(--accent); }
+
+        /* Notification Fix: Required for auth-guard.js alerts */
+        .push-notification {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #000; border: 1px solid var(--accent); color: var(--accent);
+            padding: 12px 20px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;
+            z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.9); text-transform: uppercase;
+        }
+    </style>
+</head>
+<body id="bodyTheme">
+
+    <div class="game-container">
+        <div class="back-nav" onclick="window.location.href='map.html'">← RETURN TO VILLAGE</div>
+
+        <div class="training-container">
+            <h2 style="letter-spacing: 4px; color: #fff; font-size: 1.2rem;">TRAINING GROUNDS</h2>
+            <p style="font-size: 0.6rem; color: #444; margin-bottom: 25px; line-height: 1.5;">
+                Fortify your vessel. Training capacity is bound to your Sovereign Level.
+            </p>
+
+            <div class="gold-banner">
+                RESERVE GOLD: <span id="displayGold">0</span>
+            </div>
+
+            <div class="stat-card" id="card-maxHp">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <div class="stat-label">Vitality <span class="stat-lvl" id="lvl-maxHp">LV. 0</span></div>
+                        <div class="stat-value" id="valHP">---</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="upgrade-btn" id="btn-maxHp" onclick="startTraining('maxHp')">TRAIN (50G)</button>
+                        <span class="req-hint" id="hint-maxHp">+20 HP | 2m</span>
+                    </div>
+                </div>
+                <div class="progress-box" id="progress-maxHp">
+                    <div class="progress-bg"><div class="progress-fill" id="fill-maxHp"></div></div>
+                    <div class="timer-text" id="time-maxHp">REMAINING: --:--</div>
+                </div>
+            </div>
+
+            <div class="stat-card" id="card-maxMana">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <div class="stat-label">Arcane <span class="stat-lvl" id="lvl-maxMana">LV. 0</span></div>
+                        <div class="stat-value" id="valMana">---</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="upgrade-btn" id="btn-maxMana" onclick="startTraining('maxMana')">TRAIN (50G)</button>
+                        <span class="req-hint" id="hint-maxMana">+10 MP | 2m</span>
+                    </div>
+                </div>
+                <div class="progress-box" id="progress-maxMana">
+                    <div class="progress-bg"><div class="progress-fill" id="fill-maxMana"></div></div>
+                    <div class="timer-text" id="time-maxMana">REMAINING: --:--</div>
+                </div>
+            </div>
+
+            <div id="statusMsg" style="font-size: 0.6rem; color: var(--accent); margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let pData = null;
+        let timerInterval = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                initSecurity(db, auth, user); // Watchdog & Theme
+                listenToPlayer(user.uid);
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        function listenToPlayer(uid) {
+            onSnapshot(doc(db, "players", uid), (snap) => {
+                if (snap.exists()) {
+                    pData = snap.data();
+                    updateUI();
+                }
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('displayGold').innerText = pData.gold;
+            document.getElementById('valHP').innerText = pData.stats.maxHp + " HP";
+            document.getElementById('valMana').innerText = pData.stats.maxMana + " MP";
+            
+            const hpLvl = pData.trainingLevels?.maxHp || 0;
+            const manaLvl = pData.trainingLevels?.maxMana || 0;
+            
+            document.getElementById('lvl-maxHp').innerText = `LV. ${hpLvl}`;
+            document.getElementById('lvl-maxMana').innerText = `LV. ${manaLvl}`;
+
+            // Update hints: matches your formula (Level+1)*2
+            document.getElementById('hint-maxHp').innerText = `+20 HP | ${(hpLvl + 1) * 2}M`;
+            document.getElementById('hint-maxMana').innerText = `+10 MP | ${(manaLvl + 1) * 2}M`;
+
+            handleTrainingState('maxHp', hpLvl);
+            handleTrainingState('maxMana', manaLvl);
+        }
+
+        function handleTrainingState(statKey, currentLvl) {
+            const btn = document.getElementById(`btn-${statKey}`);
+            const hint = document.getElementById(`hint-${statKey}`);
+            const progBox = document.getElementById(`progress-${statKey}`);
+            
+            // Check if player is currently training this specific stat
+            if (pData.trainingStat === statKey && pData.trainingUntil) {
+                btn.style.display = "none";
+                hint.style.display = "none";
+                progBox.style.display = "block";
+                startLocalTimer(statKey);
+            } else {
+                btn.style.display = "block";
+                hint.style.display = "block";
+                progBox.style.display = "none";
+
+                // Cap logic: cannot train past current Sovereign Level
+                const atCap = currentLvl >= pData.level;
+                btn.disabled = (pData.trainingUntil || pData.gold < 50 || atCap);
+                
+                if (atCap) {
+                    btn.innerText = "CAP REACHED";
+                    hint.innerText = "Level Up in Wildlands";
+                } else {
+                    btn.innerText = "TRAIN (50G)";
+                }
+            }
+        }
+
+        function startLocalTimer(statKey) {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = pData.trainingUntil - now;
+
+                if (diff <= 0) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                // Total time calculation for bar percentage
+                const total = pData.trainingTotalTime || ((pData.trainingLevels[statKey] + 1) * 120000);
+                const percent = ((total - diff) / total) * 100;
+                document.getElementById(`fill-${statKey}`).style.width = percent + "%";
+
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                document.getElementById(`time-${statKey}`).innerText = 
+                    `REMAINING: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }, 1000);
+        }
+
+        window.startTraining = async (statKey) => {
+            const currentLvl = pData.trainingLevels?.[statKey] || 0;
+            
+            if (pData.gold < 50) return alert("Insufficient gold.");
+            if (currentLvl >= pData.level) return alert("Vessel capacity reached for this level.");
+
+            const minutes = (currentLvl + 1) * 2;
+            const ms = minutes * 60 * 1000;
+            const finishTime = Date.now() + ms;
+
+            try {
+                await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                    gold: increment(-50),
+                    trainingUntil: finishTime,
+                    trainingStat: statKey,
+                    trainingTotalTime: ms
+                });
+            } catch (e) {
+                console.error("Training session failed to initialize:", e);
+            }
+        };
+    </script>
+</body>
+</html>

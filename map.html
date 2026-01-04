@@ -6,6 +6,15 @@
     <title>Village Hub - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        /* Mobile-First 400px Container */
+        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; }
+        .game-container { 
+            width: 400px; height: 100vh; background: #000; 
+            display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;
+            position: relative; border-left: 1px solid #111; border-right: 1px solid #111;
+        }
+
+        /* Dynamic Element Themes */
         .theme-Fire { --accent: #ff4444; }
         .theme-Water { --accent: #44aaff; }
         .theme-Wind { --accent: #62ffe1; }
@@ -13,15 +22,16 @@
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
 
-        /* Status & Stats */
+        /* Top Bar */
         .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; align-items: center; }
-        #realTimeClock { color: var(--accent); }
+        #realTimeClock { color: var(--accent); font-weight: bold; }
         .top-right-icons { display: flex; gap: 10px; align-items: center; }
         .settings-btn { cursor: pointer; color: #888; font-size: 1.1rem; transition: 0.2s; }
         .settings-btn:hover { color: var(--accent); }
         
+        /* HUD Header */
         .stat-header { border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0; }
-        .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); }
+        .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); text-transform: uppercase; }
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
         .resource-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
@@ -30,82 +40,62 @@
         .hp-fill { background: #ff4444; }
         .mana-fill { background: #44aaff; }
         .exp-fill { background: #ccff00; }
-        .bar-label { position: absolute; top: 0; left: 4px; font-size: 0.5rem; line-height: 10px; font-weight: bold; color: white; text-transform: uppercase; }
+        .bar-label { position: absolute; top: 0; left: 4px; font-size: 0.5rem; line-height: 10px; font-weight: bold; color: white; text-transform: uppercase; text-shadow: 1px 1px #000; }
 
         .currency-row { display: flex; gap: 12px; margin-top: 5px; font-size: 0.7rem; font-weight: bold; }
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
         /* Navigation List */
-        .map-locations { display: flex; flex-direction: column; gap: 5px; flex-grow: 1; overflow-y: auto; }
-        .map-locations::-webkit-scrollbar { display: none; }
-        .map-locations { -ms-overflow-style: none; scrollbar-width: none; }
+        .map-locations { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+        .map-locations::-webkit-scrollbar { width: 3px; }
+        .map-locations::-webkit-scrollbar-thumb { background: var(--accent); }
 
         .loc-btn {
-            background: #0a0a0a; border: 1px solid #222; color: #eee;
-            padding: 8px 10px; border-radius: 5px; cursor: pointer; text-align: left;
-            display: flex; flex-direction: column; justify-content: center; min-height: 45px; 
-            transition: 0.2s;
+            background: #0a0a0a; border: 1px solid #1a1a1a; color: #eee;
+            padding: 12px; border-radius: 6px; cursor: pointer; text-align: left;
+            display: flex; flex-direction: column; transition: 0.2s;
         }
         .loc-btn:hover { border-color: var(--accent); background: #111; }
-        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; }
-        .loc-desc { font-size: 0.55rem; color: #666; line-height: 1.2; margin-top: 2px; }
-        
-        .warning-text { color: #ff4444 !important; font-style: italic; }
+        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .loc-desc { font-size: 0.6rem; color: #666; margin-top: 3px; line-height: 1.3; }
 
-        /* Modal Settings Overlay */
-        .modal-overlay { position: absolute; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; border-radius: 8px; }
+        /* Settings Modal */
+        .modal-overlay { position: absolute; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; }
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; }
-        .close-modal { cursor: pointer; color: #888; font-size: 1.2rem; }
-        
-        .profile-avatar { width: 50px; height: 50px; background: var(--accent); border-radius: 50%; margin: 0 auto 10px auto; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #000; font-weight: bold; }
-        
-        /* Stats & Medals Grid */
-        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .stat-box { background: #0a0a0a; border: 1px solid #222; padding: 10px; border-radius: 4px; text-align: center; }
-        .stat-val { display: block; color: var(--accent); font-weight: bold; font-size: 0.85rem; }
-        .stat-lbl { font-size: 0.55rem; color: #555; text-transform: uppercase; }
-        
-        .medal-badge { font-size: 1.2rem; cursor: help; filter: drop-shadow(0 0 2px var(--accent)); }
+        .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
+        .profile-avatar { width: 60px; height: 60px; background: var(--accent); border-radius: 50%; margin: 0 auto 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: #000; font-weight: bold; }
+        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .stat-box { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 10px; border-radius: 4px; text-align: center; }
+        .stat-val { display: block; color: var(--accent); font-weight: bold; font-size: 0.9rem; }
+        .stat-lbl { font-size: 0.5rem; color: #555; text-transform: uppercase; }
+        .logout-btn { margin-top: auto; background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem; letter-spacing: 1px; }
 
-        .logout-btn { margin-top: auto; background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
-
-        #loading { position: fixed; inset: 0; background: #050505; z-index: 3000; display: flex; justify-content: center; align-items: center; color: var(--accent); font-weight: bold; }
+        #loading { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #5eead4; font-weight: bold; letter-spacing: 2px; }
     </style>
 </head>
-<body class="theme-Light" id="bodyTheme">
+<body id="bodyTheme" class="theme-Light">
 
     <div id="loading">MANIFESTING REALM...</div>
 
     <div class="game-container">
         <div id="profileModal" class="modal-overlay">
             <div class="modal-header">
-                <span class="modal-title">PLAYER MENU</span>
-                <span class="close-modal" onclick="toggleModal()">✕</span>
+                <span class="modal-title">VESSEL CORE</span>
+                <span style="cursor:pointer; color:#888;" onclick="toggleModal()">✕</span>
             </div>
-            
             <div class="profile-avatar" id="pInitial">?</div>
-            <div style="text-align: center; margin-bottom: 10px;">
-                <span id="pNameDisplay" style="font-weight: bold; color: var(--accent); font-size: 1rem;">Name</span><br>
-                <span id="pElementDisplay" style="font-size: 0.6rem; color: #666; text-transform: uppercase;">Element</span>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span id="mod-name" style="font-weight: bold; color: var(--accent); font-size: 1.1rem;">---</span><br>
+                <span id="mod-element" style="font-size: 0.6rem; color: #666; text-transform: uppercase; letter-spacing: 2px;">---</span>
             </div>
-
-            <div style="margin-bottom: 15px;">
-                <span style="font-size: 0.6rem; color: #555; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px;">Medal Vault</span>
-                <div id="medalsContainer" style="display: flex; gap: 8px; flex-wrap: wrap; background: #0a0a0a; border: 1px solid #222; padding: 8px; border-radius: 4px; min-height: 40px; align-items: center; justify-content: center;">
-                    <span style="font-size: 0.6rem; color: #333;">No medals earned yet...</span>
-                </div>
-            </div>
-
             <div class="profile-stats-grid">
                 <div class="stat-box"><span class="stat-val" id="mod-hp">--</span><span class="stat-lbl">Max HP</span></div>
                 <div class="stat-box"><span class="stat-val" id="mod-mana">--</span><span class="stat-lbl">Max Mana</span></div>
                 <div class="stat-box"><span class="stat-val" id="mod-gold">--</span><span class="stat-lbl">Gold</span></div>
                 <div class="stat-box"><span class="stat-val" id="mod-shards">--</span><span class="stat-lbl">Shards</span></div>
             </div>
-
-            <button class="logout-btn" id="logoutBtn">DISCONNECT</button>
+            <button class="logout-btn" id="logoutBtn">DISCONNECT FROM VOID</button>
         </div>
 
         <div class="top-status">
@@ -117,7 +107,7 @@
         </div>
 
         <div class="stat-header">
-            <span class="sov-lvl">LVL <span id="pLvl">1</span></span>
+            <span class="sov-lvl">LVL <span id="pLvl">0</span></span>
             <span class="sov-name" id="pName">Sovereign</span>
             <div class="resource-bars">
                 <div class="bar-container"><div class="bar-fill hp-fill" id="hpBar"></div><span class="bar-label" id="hpLabel">HP: --/--</span></div>
@@ -131,37 +121,35 @@
         </div>
 
         <div class="map-locations">
-            <button class="loc-btn" onclick="alert('Training...')">
+            <button class="loc-btn" onclick="window.location.href='wildlands.html'">
+                <span class="loc-title">The Wildlands</span>
+                <span class="loc-desc">Venture beyond the walls to hunt and scavenge.</span>
+            </button>
+
+            <button class="loc-btn" onclick="window.location.href='quest.html'">
+                <span class="loc-title">The Bounty Board</span>
+                <span class="loc-desc">Accept contracts to secure Gold and EXP for your journey.</span>
+            </button>
+
+            <button class="loc-btn" onclick="window.location.href='training.html'">
                 <span class="loc-title">Training Grounds</span>
-                <span class="loc-desc">Hone your skills and augment your physical vessel.</span>
+                <span class="loc-desc">Hone your physical vessel and augment core attributes.</span>
             </button>
-            <button class="loc-btn" onclick="alert('Forge...')">
+            <button class="loc-btn" onclick="window.location.href='forge.html'">
                 <span class="loc-title">Village Forge</span>
-                <span class="loc-desc">Temper your armaments in ancient flames.</span>
-            </button>
-            <button class="loc-btn" onclick="alert('Bazaar...')">
-                <span class="loc-title">The Bazaar</span>
-                <span class="loc-desc">Trade your spoils for rare materials.</span>
-            </button>
-            <button class="loc-btn" onclick="alert('Quests...')">
-                <span class="loc-title">Quest Board</span>
-                <span class="loc-desc">Contractual obligations for those seeking glory.</span>
+                <span class="loc-desc">Temper armaments in the ancient fires of the Old World.</span>
             </button>
             <button class="loc-btn" onclick="window.location.href='chat.html'">
                 <span class="loc-title">Global Echoes</span>
-                <span class="loc-desc">Commune with other survivors across the void.</span>
-            </button>
-            <button class="loc-btn" onclick="alert('Leaderboard...')">
-                <span class="loc-title">Hall of Sovereigns</span>
-                <span class="loc-desc">Behold the legends whose names still echo.</span>
-            </button>
-            <button class="loc-btn" onclick="alert('RULES: No cheating. No toxicity. No mercy.')">
-                <span class="loc-title">Laws of the Realm</span>
-                <span class="loc-desc warning-text">Violate the sacred laws and watch your soul evaporate into the abyss.</span>
+                <span class="loc-desc">Commune with other survivors across the fractured realms.</span>
             </button>
             <button class="loc-btn" onclick="window.location.href='minigame.html'">
                 <span class="loc-title">The Elder's Riddle</span>
-                <span class="loc-desc">Wounded? Master South African trivia to earn Gold while you heal.</span>
+                <span class="loc-desc">Answer South African lore to earn Gold while you mend.</span>
+            </button>
+            <button class="loc-btn" onclick="alert('Laws: No mercy. No toxicity. No cheating.')">
+                <span class="loc-title">Laws of the Realm</span>
+                <span class="loc-desc" style="color:#ff4444; font-style:italic;">Violate the laws and watch your soul evaporate.</span>
             </button>
         </div>
     </div>
@@ -169,7 +157,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
@@ -193,28 +182,24 @@
             document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); 
         }, 1000);
 
-        async function checkPing() {
-            const start = Date.now();
-            try {
-                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
-                document.getElementById('pingDisplay').innerText = Date.now() - start;
-            } catch (e) {
-                document.getElementById('pingDisplay').innerText = "??";
-            }
-        }
-        setInterval(checkPing, 3000);
-        checkPing();
-
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const docSnap = await getDoc(doc(db, "players", user.uid));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const s = data.stats;
+                initSecurity(db, auth, user);
+                setupLiveListener(user.uid);
+            } else {
+                window.location.href = "index.html";
+            }
+        });
 
-                    // Update UI
+        function setupLiveListener(uid) {
+            onSnapshot(doc(db, "players", uid), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const s = data.stats;
+                    const lvl = data.level || 0;
+
                     document.getElementById('pName').innerText = data.name;
-                    document.getElementById('pLvl').innerText = data.level;
+                    document.getElementById('pLvl').innerText = lvl;
                     document.getElementById('pGold').innerText = data.gold;
                     document.getElementById('pShards').innerText = data.shards || 0;
                     
@@ -222,44 +207,39 @@
                     document.getElementById('hpLabel').innerText = `HP: ${s.hp}/${s.maxHp}`;
                     document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
                     document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
-                    document.getElementById('expBar').style.width = ((data.exp || 0) / (data.level * 100) * 100) + "%";
-                    document.getElementById('expLabel').innerText = `EXP: ${data.exp || 0}/${data.level * 100}`;
+                    
+                    const expReq = lvl === 0 ? 50 : lvl * 100;
+                    const currentXP = data.xp || 0;
+                    document.getElementById('expBar').style.width = (Math.min(currentXP / expReq, 1) * 100) + "%";
+                    document.getElementById('expLabel').innerText = `EXP: ${currentXP}/${expReq}`;
 
-                    // Update Profile Modal
+                    document.getElementById('mod-name').innerText = data.name;
+                    document.getElementById('mod-element').innerText = data.element;
                     document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
-                    document.getElementById('pNameDisplay').innerText = data.name;
-                    document.getElementById('pElementDisplay').innerText = data.element;
                     document.getElementById('mod-hp').innerText = s.maxHp;
                     document.getElementById('mod-mana').innerText = s.maxMana;
                     document.getElementById('mod-gold').innerText = data.gold;
                     document.getElementById('mod-shards').innerText = data.shards || 0;
 
-                    // Handle Medals
-                    const medalsContainer = document.getElementById('medalsContainer');
-                    const playerMedals = data.medals || []; 
-                    if (playerMedals.length > 0) {
-                        medalsContainer.innerHTML = "";
-                        const icons = { "Scholar": "🎓", "Warrior": "⚔️", "Rich": "💰", "Survivor": "🩸" };
-                        playerMedals.forEach(medal => {
-                            const mSpan = document.createElement('span');
-                            mSpan.className = "medal-badge";
-                            mSpan.title = medal; 
-                            mSpan.innerText = icons[medal] || "🏅";
-                            medalsContainer.appendChild(mSpan);
-                        });
-                    }
-
                     document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     document.getElementById('loading').style.display = 'none';
                 }
-            } else { 
-                window.location.href = "index.html"; 
-            }
-        });
+            });
+        }
 
         document.getElementById('logoutBtn').onclick = () => {
             signOut(auth).then(() => window.location.href = "index.html");
         };
+
+        async function checkPing() {
+            const start = Date.now();
+            try {
+                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+                document.getElementById('pingDisplay').innerText = Date.now() - start;
+            } catch (e) { document.getElementById('pingDisplay').innerText = "??"; }
+        }
+        setInterval(checkPing, 5000);
+        checkPing();
     </script>
 </body>
 </html>

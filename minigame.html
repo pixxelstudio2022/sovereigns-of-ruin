@@ -7,39 +7,43 @@
     <link rel="stylesheet" href="style.css">
     <style>
         .quiz-container { flex-grow: 1; display: flex; flex-direction: column; text-align: center; padding: 10px; }
-        .timer-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
-        #timerFill { width: 100%; height: 100%; background: #62ffe1; transition: width 0.1s linear; }
+        .timer-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin-bottom: 25px; overflow: hidden; border: 1px solid #222; }
+        #timerFill { width: 100%; height: 100%; background: var(--accent); transition: width 0.1s linear; }
         
-        #questionText { font-size: 0.95rem; margin-bottom: 20px; min-height: 60px; color: #eee; line-height: 1.4; }
-        .answers-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        #questionText { font-size: 1rem; margin-bottom: 25px; min-height: 80px; color: #eee; line-height: 1.5; padding: 0 10px; font-weight: bold;}
+        .answers-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        
         .ans-btn { 
-            background: #111; border: 1px solid #333; color: #ccc; 
-            padding: 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
-            transition: 0.2s;
+            background: #0a0a0a; border: 1px solid #222; color: #999; 
+            padding: 14px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+            transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
         }
-        .ans-btn:hover:not(:disabled) { border-color: #62ffe1; background: #1a1a1a; }
-        .ans-btn.correct { background: #114411 !important; border-color: #00ff00 !important; color: #fff; }
-        .ans-btn.wrong { background: #441111 !important; border-color: #ff0000 !important; color: #fff; }
+        .ans-btn:hover:not(:disabled) { border-color: var(--accent); background: #111; color: #fff; }
+        .ans-btn.correct { background: rgba(0, 255, 100, 0.1) !important; border-color: #00ff66 !important; color: #00ff66; font-weight: bold; }
+        .ans-btn.wrong { background: rgba(255, 0, 0, 0.1) !important; border-color: #ff4444 !important; color: #ff4444; }
 
-        .reward-popup { font-size: 0.7rem; color: #ffcc00; margin-top: 15px; font-weight: bold; opacity: 0; transition: 0.3s; }
-        .limit-popup { color: #ff4444; font-size: 0.65rem; margin-top: 15px; display: none; }
-        .back-nav { font-size: 0.7rem; color: #888; cursor: pointer; margin-bottom: 10px; align-self: flex-start; }
+        .reward-popup { font-size: 0.75rem; color: #ffcc00; margin-top: 20px; font-weight: bold; opacity: 0; transition: 0.3s; letter-spacing: 1px; }
+        .limit-popup { color: #ff4444; font-size: 0.65rem; margin-top: 20px; display: none; font-weight: bold; }
+        .back-nav { font-size: 0.7rem; color: #444; cursor: pointer; margin-bottom: 15px; align-self: flex-start; transition: 0.2s; }
+        .back-nav:hover { color: var(--accent); }
     </style>
 </head>
-<body class="theme-Wind"> 
-    <div class="game-container">
-        <div class="back-nav" onclick="window.location.href='map.html'">← Return to Village</div>
-        
-        <div class="quiz-container">
-            <div style="font-size: 0.6rem; color: #555; margin-bottom: 5px; letter-spacing: 1px;">TIME REMAINING</div>
-            <div class="timer-bar"><div id="timerFill"></div></div>
-
-            <div id="questionText">Waiting for the Elder...</div>
+<body id="bodyTheme"> 
+    <div class="game-container" style="width: 400px; margin: 0 auto;">
+        <div class="scroll-area">
+            <div class="back-nav" onclick="window.location.href='map.html'">← RETURN TO VILLAGE</div>
             
-            <div class="answers-grid" id="answerButtons"></div>
+            <div class="quiz-container">
+                <div style="font-size: 0.55rem; color: #444; margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase;">Temporal Essence</div>
+                <div class="timer-bar"><div id="timerFill"></div></div>
 
-            <div id="rewardMsg" class="reward-popup">+1 GOLD EARNED</div>
-            <div id="limitMsg" class="limit-popup">GOLD LIMIT EXCEEDED FOR THE DAY</div>
+                <div id="questionText">The Elder is contemplating...</div>
+                
+                <div class="answers-grid" id="answerButtons"></div>
+
+                <div id="rewardMsg" class="reward-popup">+1 GOLD EARNED</div>
+                <div id="limitMsg" class="limit-popup">GOLD LIMIT EXCEEDED FOR THE DAY</div>
+            </div>
         </div>
     </div>
 
@@ -48,6 +52,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         
+        import { initSecurity } from "./auth-guard.js";
         import { saQuizPool } from "./questions.js";
 
         const firebaseConfig = {
@@ -65,11 +70,12 @@
 
         let currentUid = null;
         let timerInterval;
-        let timeLeft = 60; 
+        let timeLeft = 100;
 
-        onAuthStateChanged(auth, (user) => { 
+        onAuthStateChanged(auth, async (user) => { 
             if (user) { 
                 currentUid = user.uid; 
+                initSecurity(db, auth, user);
                 nextQuestion(); 
             } else { 
                 window.location.href = "index.html"; 
@@ -81,10 +87,8 @@
             document.getElementById('rewardMsg').style.opacity = 0;
             document.getElementById('limitMsg').style.display = "none";
 
-            // Local browser tracking for seen questions (preventing refresh spam)
-            const pool = saQuizPool; 
-            const randomIndex = Math.floor(Math.random() * pool.length);
-            const qData = pool[randomIndex];
+            const randomIndex = Math.floor(Math.random() * saQuizPool.length);
+            const qData = saQuizPool[randomIndex];
 
             document.getElementById('questionText').innerText = qData.q;
             const btnContainer = document.getElementById('answerButtons');
@@ -101,16 +105,16 @@
         }
 
         function startTimer() {
-            timeLeft = 60;
+            timeLeft = 100;
             const bar = document.getElementById('timerFill');
             timerInterval = setInterval(() => {
-                timeLeft--;
-                bar.style.width = (timeLeft / 60 * 100) + "%";
+                timeLeft -= 1; 
+                bar.style.width = timeLeft + "%";
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     nextQuestion(); 
                 }
-            }, 100);
+            }, 100); 
         }
 
         async function checkAnswer(selected, correct, btn) {
@@ -126,19 +130,14 @@
                     const snap = await getDoc(playerRef);
                     const data = snap.data();
                     
-                    const today = new Date().toDateString(); // e.g., "Sun Jan 04 2026"
+                    const today = new Date().toDateString();
                     const lastDate = data.lastGoldDate || "";
-                    let currentDailyCount = data.dailyGoldCount || 0;
-
-                    // Reset count if it's a new day (00:00 check)
-                    if (lastDate !== today) {
-                        currentDailyCount = 0;
-                    }
+                    let currentDailyCount = (lastDate === today) ? (data.dailyGoldCount || 0) : 0;
 
                     if (currentDailyCount < 100) {
                         await updateDoc(playerRef, { 
                             gold: increment(1),
-                            dailyGoldCount: increment(1),
+                            dailyGoldCount: (lastDate !== today) ? 1 : increment(1),
                             lastGoldDate: today
                         });
                         document.getElementById('rewardMsg').style.opacity = 1;
@@ -146,7 +145,7 @@
                         document.getElementById('limitMsg').style.display = "block";
                     }
                 } catch (e) {
-                    console.error("Save failed:", e);
+                    console.error("Gold distribution failed:", e);
                 }
             } else {
                 btn.classList.add('wrong');

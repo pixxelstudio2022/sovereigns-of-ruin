@@ -8,6 +8,9 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth
  */
 export async function initSecurity(db, auth, user) {
     const playerRef = doc(db, "players", user.uid);
+    
+    // Store when THIS specific tab/session started to prevent instant kicks
+    const sessionStartTime = Date.now();
 
     // 1. Initial Load & Theme Application
     const docSnap = await getDoc(playerRef);
@@ -17,12 +20,10 @@ export async function initSecurity(db, auth, user) {
         playerData = docSnap.data();
         
         // Apply Element Class (e.g., "Fire", "Shadow") to body for CSS variables
-        // This makes var(--accent) work immediately in chat.html
         if (playerData.element) {
-            document.body.className = playerData.element;
+            document.body.className = `theme-${playerData.element}`;
         }
     } else {
-        // Safety: If no player record exists, go to selection/index
         window.location.href = "index.html";
         return null;
     }
@@ -31,15 +32,22 @@ export async function initSecurity(db, auth, user) {
     onSnapshot(playerRef, async (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.data();
+            const now = Date.now();
             
             // --- SESSION CHECK (Anti-Hijack) ---
             const localSessionId = localStorage.getItem('currentSessionId');
-            if (data.activeSessionId && data.activeSessionId !== localSessionId) {
-                alert("Session expired. Account logged in elsewhere.");
-                signOut(auth).then(() => {
-                    window.location.href = "index.html";
-                });
-                return;
+            
+            // THE FIX: 
+            // 1. Only check after 10 seconds (gives login/register time to save IDs)
+            // 2. Only kick if there IS an activeSessionId in the DB and it's different
+            if (now - sessionStartTime > 10000) { 
+                if (data.activeSessionId && data.activeSessionId !== localSessionId) {
+                    alert("Session expired. Account logged in elsewhere.");
+                    signOut(auth).then(() => {
+                        window.location.href = "index.html";
+                    });
+                    return;
+                }
             }
 
             // --- AUTOMATIC LEVEL-UP SYSTEM ---
@@ -84,7 +92,6 @@ export async function initSecurity(db, auth, user) {
         }
     });
 
-    // CRITICAL: Return the data so Chat.html's "myProfile" variable is populated.
     return playerData;
 }
 
@@ -104,7 +111,7 @@ function showNotification(text) {
             background: rgba(0, 0, 0, 0.9); 
             color: #fff; 
             padding: 12px 24px; 
-            border: 1px solid var(--accent, #62ffe1); 
+            border: 1px solid #62ffe1; 
             z-index: 10001; 
             font-size: 0.7rem; 
             border-radius: 4px; 

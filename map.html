@@ -151,7 +151,7 @@
                 <span class="loc-desc">Answer South African lore to earn Gold while you mend.</span>
             </button>
 
-            <button class="loc-btn" onclick="alert('Laws: No mercy. No toxicity. No cheating.')">
+            <button class="loc-btn" onclick="window.location.href='laws.html'">
                 <span class="loc-title">Laws of the Realm</span>
                 <span class="loc-desc" style="color:#ff4444; font-style:italic;">Violate the laws and watch your soul evaporate.</span>
             </button>
@@ -177,7 +177,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- NEW SECURITY LOGIC ---
+        // --- SECURITY LOGIC ---
         let idleTimer;
         function resetIdleTimer() {
             clearTimeout(idleTimer);
@@ -200,8 +200,8 @@
             if (user) {
                 initSecurity(db, auth, user);
                 setupLiveListener(user.uid);
-                startHeartbeat(user.uid); // FIXED: Keep session alive
-                resetIdleTimer(); // FIXED: 5-min logout
+                startHeartbeat(user.uid);
+                resetIdleTimer();
 
                 ['mousedown', 'mousemove', 'keypress', 'touchstart'].forEach(evt => 
                     window.addEventListener(evt, resetIdleTimer));

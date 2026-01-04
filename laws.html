@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Laws of the Realm - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Specific styling for the Laws list */
+        .laws-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .law-entry {
+            border-left: 2px solid var(--accent);
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 0 8px 8px 0;
+            border-bottom: 1px solid #111;
+        }
+
+        .law-num {
+            font-size: 0.55rem;
+            color: var(--accent);
+            letter-spacing: 2px;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .law-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+            display: block;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .law-text {
+            font-size: 0.75rem;
+            color: var(--accent); /* Matches your bubble text style */
+            line-height: 1.5;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        /* Visible scrollbar for laws */
+        .laws-content::-webkit-scrollbar { width: 3px; }
+        .laws-content::-webkit-scrollbar-thumb { background: var(--accent); }
+    </style>
+</head>
+<body id="bodyTheme">
+    <div class="game-container">
+        <div class="chat-header">
+            <a class="back-btn" onclick="window.location.href='map.html'">← Village</a>
+            <span class="room-title">LAWS OF THE REALM</span>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="laws-content">
+            
+            <div class="law-entry">
+                <span class="law-num">DECREE I</span>
+                <span class="law-title">Soul-Binding Origin</span>
+                <p class="law-text">Once a place of birth is selected, the soul is anchored. This path is eternal and cannot be altered [cite: 2026-01-01].</p>
+            </div>
+
+            <div class="law-entry">
+                <span class="law-num">DECREE II</span>
+                <span class="law-title">Echo Etiquette</span>
+                <p class="law-text">Every echo cast carries the weight of your element. Hostility beyond the arena of ruin results in immediate evaporation.</p>
+            </div>
+
+            <div class="law-entry">
+                <span class="law-num">DECREE III</span>
+                <span class="law-title">Forbidden Scripts</span>
+                <p class="law-text">Attempting to manipulate the fabric of the realm through exploits or forbidden scripts will alert the Sovereigns.</p>
+            </div>
+
+            <div class="law-entry">
+                <span class="law-num">DECREE IV</span>
+                <span class="law-title">The Void's Claim</span>
+                <p class="law-text">Inactivity allows the Void to reclaim your vessel. Stay active or be disconnected from the core.</p>
+            </div>
+
+        </div>
+
+        <div class="chat-footer"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
+            authDomain: "sovereigns-of-ruin.firebaseapp.com",
+            projectId: "sovereigns-of-ruin",
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
+            messagingSenderId: "1098142064736",
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Link auth-guard to the page as required [cite: 2026-01-04]
+                const myProfile = await initSecurity(db, auth, user);
+                if (myProfile) {
+                    document.body.className = `theme-${myProfile.element}`;
+                }
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

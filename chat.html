@@ -5,12 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Global Echoes - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        #adminWipe {
+            display: none;
+            color: #ff4444;
+            font-size: 0.65rem;
+            border: 1px solid #ff4444;
+            padding: 3px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
 </head>
 <body id="bodyTheme">
     <div class="game-container">
         <div class="chat-header">
             <a class="back-btn" onclick="window.location.href='map.html'">← Village</a>
             <span class="room-title">GLOBAL ECHOES</span>
+            <div id="adminWipe" onclick="clearAllEchoes()">Wipe</div>
             <div style="width: 40px;"></div>
         </div>
 
@@ -20,14 +34,13 @@
         </div>
 
         <div id="chatMessages"></div>
-
         <div class="chat-footer"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = {
@@ -43,49 +56,48 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        const ADMIN_UID = "v6M5KflMjQam6M9LUeZym666fKw1";
         let myProfile = null;
 
-        // AUTH & THEME INITIALIZATION
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Link auth-guard to the page as requested
                 myProfile = await initSecurity(db, auth, user);
                 if (myProfile) {
                     document.body.className = `theme-${myProfile.element}`;
+                    if (user.uid === ADMIN_UID) document.getElementById('adminWipe').style.display = "block";
                     document.getElementById('messageInput').disabled = false;
                     document.getElementById('sendBtn').disabled = false;
                     document.getElementById('messageInput').placeholder = "Cast an echo...";
                     loadEchoes();
                 }
-            } else {
-                window.location.href = "index.html";
-            }
+            } else { window.location.href = "index.html"; }
         });
+
+        window.clearAllEchoes = async () => {
+            if (!confirm("Wipe all messages?")) return;
+            try {
+                const q = query(collection(db, "messages"));
+                const snapshot = await getDocs(q);
+                const batch = writeBatch(db);
+                snapshot.forEach((doc) => batch.delete(doc.ref));
+                await batch.commit();
+            } catch (err) { console.error("Purge failed:", err); }
+        };
 
         function loadEchoes() {
             const q = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(40));
-            
             onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('chatMessages');
                 container.innerHTML = ""; 
-
                 snapshot.docs.reverse().forEach(doc => {
                     const data = doc.data();
                     if (!data.text) return; 
-
                     const isMine = auth.currentUser && data.uid === auth.currentUser.uid;
                     const elementColor = getHexColor(data.element);
-                    
-                    let timeStr = "...";
-                    if (data.createdAt) {
-                        const date = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds * 1000);
-                        timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    }
+                    let timeStr = data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "...";
 
                     const wrapper = document.createElement('div');
                     wrapper.className = `msg-wrapper ${isMine ? 'mine' : 'theirs'}`;
-                    
-                    // UPDATED: color now uses elementColor so text matches the glow
                     wrapper.innerHTML = `
                         <div class="meta-info">
                             <span style="color: ${elementColor}; font-weight: bold;">${data.name}</span>
@@ -97,7 +109,6 @@
                     `;
                     container.appendChild(wrapper);
                 });
-                // Auto-scroll to latest message
                 container.scrollTop = container.scrollHeight;
             });
         }
@@ -106,7 +117,6 @@
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text || !myProfile) return;
-
             input.value = ""; 
             try {
                 await addDoc(collection(db, "messages"), {
@@ -116,16 +126,11 @@
                     element: myProfile.element,
                     createdAt: serverTimestamp()
                 });
-            } catch (err) {
-                console.error("Echo failed:", err);
-            }
+            } catch (err) { console.error("Echo failed:", err); }
         }
 
         function getHexColor(element) {
-            const colors = { 
-                'Fire': '#ff4444', 'Water': '#44aaff', 'Wind': '#62ffe1', 
-                'Earth': '#aa7744', 'Light': '#ffffcc', 'Shadow': '#bb66ff', 'Void': '#aa00ff' 
-            };
+            const colors = { 'Fire': '#ff4444', 'Water': '#44aaff', 'Wind': '#62ffe1', 'Earth': '#aa7744', 'Light': '#ffffcc', 'Shadow': '#bb66ff', 'Void': '#aa00ff' };
             return colors[element] || '#ffffff';
         }
 

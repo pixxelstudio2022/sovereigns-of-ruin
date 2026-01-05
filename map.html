@@ -12,32 +12,41 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            /* Allow natural browser scrolling */
             overflow-x: hidden;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            height: auto !important;
+            overflow-y: hidden; /* Lock the main body to prevent double scrollbars */
+            height: 100dvh;
         }
 
         body {
-            /* Removing flex centering to prevent mobile scroll-lock */
-            display: block; 
+            display: flex;
+            justify-content: center;
             font-family: sans-serif;
         }
 
         .game-container { 
-            /* Centering the 400px window using margin */
-            margin: 0 auto;
             width: 400px; 
-            min-height: 100vh; 
+            height: 100dvh; 
             background: #000; 
             display: flex; 
             flex-direction: column; 
-            padding: 15px; 
             box-sizing: border-box;
             position: relative; 
             border-left: 1px solid #111; 
             border-right: 1px solid #111;
+        }
+
+        /* UI Line Elements */
+        .ui-header-line {
+            border-bottom: 1px solid #111;
+            padding: 10px 15px;
+            flex-shrink: 0;
+        }
+
+        .ui-footer-line {
+            border-top: 1px solid #111;
+            padding: 10px;
+            text-align: center;
+            flex-shrink: 0;
         }
 
         /* Dynamic Element Themes */
@@ -55,7 +64,12 @@
         .settings-btn { cursor: pointer; color: #888; font-size: 1.1rem; transition: 0.2s; }
         
         /* HUD Header */
-        .stat-header { border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 10px; flex-shrink: 0; }
+        .stat-header { 
+            border-bottom: 2px solid var(--accent); 
+            padding: 0 15px 8px 15px; 
+            margin-bottom: 5px; 
+            flex-shrink: 0; 
+        }
         .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); text-transform: uppercase; }
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
@@ -71,23 +85,30 @@
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
-        /* Navigation List - Flow Fix */
+        /* Navigation List - Contained inside Header/Footer */
         .map-locations { 
-            display: block; /* Switch to block to ensure vertical stacking */
-            padding-bottom: 80px; /* Buffer space at the bottom */
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px; /* Reduced gap to fit everything perfectly */
         }
+
+        /* Hide Scrollbar for clean look */
+        .map-locations::-webkit-scrollbar { width: 0px; }
 
         .loc-btn {
             width: 100%;
-            margin-bottom: 8px;
             background: #0a0a0a; border: 1px solid #1a1a1a; color: #eee;
-            padding: 12px; border-radius: 6px; cursor: pointer; text-align: left;
+            padding: 10px 12px; border-radius: 6px; cursor: pointer; text-align: left;
             display: flex; flex-direction: column; transition: 0.2s;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         .loc-btn:hover { border-color: var(--accent); background: #111; }
-        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        .loc-desc { font-size: 0.6rem; color: #666; margin-top: 3px; line-height: 1.3; }
+        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+        .loc-desc { font-size: 0.55rem; color: #666; margin-top: 2px; line-height: 1.2; }
 
         /* Vessel Core Modal */
         .modal-overlay { 
@@ -141,11 +162,13 @@
             <p style="font-size: 0.5rem; color: #222; text-align: center;">SOVEREIGNS OF RUIN v1.0</p>
         </div>
 
-        <div class="top-status">
-            <div id="realTimeClock">00:00:00</div>
-            <div class="top-right-icons">
-                <div>PING: <span id="pingDisplay">--</span>ms</div>
-                <div class="settings-btn" onclick="toggleModal()">⚙</div>
+        <div class="ui-header-line">
+            <div class="top-status">
+                <div id="realTimeClock">00:00:00</div>
+                <div class="top-right-icons">
+                    <div>PING: <span id="pingDisplay">--</span>ms</div>
+                    <div class="settings-btn" onclick="toggleModal()">⚙</div>
+                </div>
             </div>
         </div>
 
@@ -196,6 +219,10 @@
                 <span class="loc-title">Laws of the Realm</span>
                 <span class="loc-desc" style="color:#ff4444; font-style:italic;">Violate the laws and watch your soul evaporate.</span>
             </button>
+        </div>
+
+        <div class="ui-footer-line">
+            <span style="font-size: 0.5rem; color: #333; letter-spacing: 2px;">VILLAGE BOUNDARY</span>
         </div>
     </div>
 

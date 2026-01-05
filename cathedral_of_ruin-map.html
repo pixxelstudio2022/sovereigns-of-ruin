@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cathedral of Ruin - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { 
+            background: #000; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            height: 100dvh; 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; 
+        }
+
+        .scene { 
+            width: 400px; 
+            height: 100dvh; 
+            position: relative; 
+            border-left: 1px solid #300; 
+            border-right: 1px solid #300; 
+            display: flex; 
+            flex-direction: column; 
+            background: linear-gradient(to bottom, #1a0000 0%, #000 100%);
+        }
+
+        /* Blood Theme Notification */
+        #welcomeNotif {
+            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 80%; background: #660000; border: 1px solid #ff0000;
+            color: #fff; padding: 15px; text-align: center; font-size: 0.7rem;
+            letter-spacing: 3px; transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            z-index: 1000; box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            font-weight: bold;
+        }
+        #welcomeNotif.show { top: 20px; }
+
+        .chat-header { 
+            padding: 12px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #400;
+            background: #000;
+        }
+
+        .back-btn { color: #ff3333; text-decoration: none; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
+        .room-title { color: #880000; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; }
+
+        .content-area { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            color: #400; 
+            font-size: 0.6rem; 
+            text-align: center; 
+            padding: 40px; 
+        }
+
+        /* Blood Core Visual Element */
+        .blood-altar {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ff0000 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(15px);
+            position: relative;
+            animation: heartBeat 1.5s infinite;
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(0.9); opacity: 0.4; }
+            10% { transform: scale(1.1); opacity: 0.8; }
+            20% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(0.9); opacity: 0.4; }
+        }
+
+        .rune-circle {
+            width: 150px;
+            height: 150px;
+            border: 1px dashed #ff000033;
+            border-radius: 50%;
+            position: absolute;
+            animation: rotateRune 20s linear infinite;
+        }
+
+        @keyframes rotateRune {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeNotif">DANGER: CATHEDRAL OF RUIN</div>
+
+    <div class="scene">
+        <div class="chat-header">
+            <a class="back-btn" href="wildlands.html">← WILDLANDS</a>
+            <span class="room-title">BLOOD REALM</span>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="content-area">
+            <div class="rune-circle"></div>
+            <div class="blood-altar"></div>
+            <div style="margin-top: 40px;">
+                <p style="color: #ff3333; font-weight: bold; letter-spacing: 2px;">THE HEART OF CHAOS</p>
+                <p>[ Placeholder for Cathedral Map Assets ]</p>
+                <p style="color: #444; margin-top: 10px;">The ground hungers for the fallen.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+            projectId: "sovereigns-of-ruin", 
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const myProfile = await initSecurity(db, auth, user);
+                if (myProfile) {
+                    setTimeout(() => {
+                        const notif = document.getElementById('welcomeNotif');
+                        notif.classList.add('show');
+                        setTimeout(() => notif.classList.remove('show'), 5000);
+                    }, 500);
+                }
+            } else { 
+                window.location.href = "index.html"; 
+            }
+        });
+    </script>
+</body>
+</html>

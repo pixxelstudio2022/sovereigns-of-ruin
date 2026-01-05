@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sunken Relic - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { 
+            background: #000; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            height: 100dvh; 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; 
+        }
+
+        .scene { 
+            width: 400px; 
+            height: 100dvh; 
+            position: relative; 
+            border-left: 1px solid #001122; 
+            border-right: 1px solid #001122; 
+            display: flex; 
+            flex-direction: column; 
+            background: radial-gradient(circle at center, #001a33 0%, #000 80%);
+        }
+
+        /* Water Theme Notification */
+        #welcomeNotif {
+            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 80%; background: rgba(0, 5, 15, 0.95); border: 1px solid #44aaff;
+            color: #44aaff; padding: 15px; text-align: center; font-size: 0.7rem;
+            letter-spacing: 2px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            z-index: 1000; box-shadow: 0 0 20px rgba(68, 170, 255, 0.2);
+        }
+        #welcomeNotif.show { top: 20px; }
+
+        .chat-header { 
+            padding: 12px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #002244;
+            background: #000;
+        }
+
+        .back-btn { color: #44aaff; text-decoration: none; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
+        .room-title { color: #eee; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; }
+
+        .content-area { 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            color: #444; 
+            font-size: 0.6rem; 
+            text-align: center; 
+            padding: 40px; 
+        }
+
+        .water-ripple {
+            width: 150px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #44aaff, transparent);
+            margin: 15px 0;
+            filter: blur(1px);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeNotif">DEPTHS REACHED: SUNKEN RELIC</div>
+
+    <div class="scene">
+        <div class="chat-header">
+            <a class="back-btn" href="wildlands.html">← WILDLANDS</a>
+            <span class="room-title">WATER REALM</span>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="content-area">
+            <div>
+                <p style="color: #44aaff; font-weight: bold; letter-spacing: 1px;">ZONE: THE ABYSSAL RUINS</p>
+                <div class="water-ripple"></div>
+                <p>[ Placeholder for Sunken Relic Map Assets ]</p>
+                <p style="color: #556677; margin-top: 10px;">The pressure of the deep is the least of your concerns.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+            projectId: "sovereigns-of-ruin", 
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const myProfile = await initSecurity(db, auth, user);
+                if (myProfile) {
+                    setTimeout(() => {
+                        const notif = document.getElementById('welcomeNotif');
+                        notif.classList.add('show');
+                        setTimeout(() => notif.classList.remove('show'), 4000);
+                    }, 500);
+                }
+            } else { 
+                window.location.href = "index.html"; 
+            }
+        });
+    </script>
+</body>
+</html>

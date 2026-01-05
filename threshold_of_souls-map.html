@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Threshold of Souls - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .scene { width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; display: flex; flex-direction: column; }
+
+        /* Welcome Notification */
+        #welcomeNotif {
+            position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 80%; background: rgba(0, 0, 0, 0.9); border: 1px solid #62ffe1;
+            color: #62ffe1; padding: 15px; text-align: center; font-size: 0.7rem;
+            letter-spacing: 2px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.27);
+            z-index: 1000; box-shadow: 0 0 20px rgba(98, 255, 225, 0.2);
+        }
+        #welcomeNotif.show { top: 20px; }
+
+        .chat-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111; }
+        .back-btn { color: #5eead4; text-decoration: none; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
+        .room-title { color: #eee; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; }
+
+        .content-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: #333; font-size: 0.6rem; text-align: center; padding: 40px; }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeNotif">WELCOME TO THRESHOLD OF SOULS</div>
+
+    <div class="scene">
+        <div class="chat-header">
+            <a class="back-btn" href="wildlands.html">← WILDLANDS</a>
+            <span class="room-title">THRESHOLD</span>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="content-area">
+            <div>
+                <p>[ Placeholder for Threshold Map Content ]</p>
+                <p style="color: #62ffe1; margin-top: 10px;">The neutral origin for all new vessels.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        // Your Config
+        const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await initSecurity(db, auth, user);
+                
+                // Show notification after page loads
+                setTimeout(() => {
+                    const notif = document.getElementById('welcomeNotif');
+                    notif.classList.add('show');
+                    // Hide it after 4 seconds
+                    setTimeout(() => notif.classList.remove('show'), 4000);
+                }, 500);
+
+            } else { window.location.href = "index.html"; }
+        });
+    </script>
+</body>
+</html>

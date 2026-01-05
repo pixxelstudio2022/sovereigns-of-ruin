@@ -72,11 +72,11 @@
             padding: 12px;
             display: grid;
             grid-template-columns: 1fr 1fr; 
-            /* Priority rows for the top/bottom blocks */
             grid-template-rows: 1.2fr repeat(3, 1fr) 1.5fr; 
             gap: 10px;
-            overflow: hidden;
+            overflow-y: auto;
         }
+        .map-grid::-webkit-scrollbar { display: none; }
 
         .boss-card {
             background: rgba(255, 255, 255, 0.02);
@@ -90,23 +90,16 @@
             transition: 0.2s;
             cursor: pointer;
             box-sizing: border-box;
+            width: 100%;
         }
 
-        /* Large blocks for Threshold and Cathedral */
         .featured-card {
             grid-column: span 2;
             padding: 15px;
             background: rgba(255, 255, 255, 0.04);
         }
 
-        /* Standard sizing for the elemental blocks */
-        .standard-card {
-            min-height: 60px;
-        }
-
-        /* TEXT STYLING */
-        .region-name { font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
-        .region-desc { font-size: 0.6rem; color: #666; line-height: 1.2; font-style: italic; }
+        .standard-card { min-height: 60px; }
 
         /* COLORS */
         .fire-text { color: #ff4444; border-color: #ff444466; }
@@ -116,9 +109,12 @@
         .light-text { color: #ffffcc; border-color: #ffffcc66; }
         .shadow-text { color: #bb66ff; border-color: #bb66ff66; }
         .blood-text { color: #ff3333; border-color: #880000; }
+        .void-text { color: #ff00ff; border-color: #ff00ff66; }
         .neutral-text { color: #eee; border-color: #333; }
         
-        /* BACK FACE SCROLL LIST (UNTOUCHED) */
+        .region-name { font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+        .region-desc { font-size: 0.6rem; color: #666; line-height: 1.2; font-style: italic; }
+
         .map-list {
             flex-grow: 1;
             overflow-y: auto !important;
@@ -158,7 +154,7 @@
                 <div class="map-grid">
                     <button class="boss-card neutral-text featured-card" onclick="enterMap('threshold')">
                         <span class="region-name">Threshold of Souls</span>
-                        <span class="region-desc">The neutral origin for all new vessels. A place beyond the reach of the Lords.</span>
+                        <span class="region-desc">The neutral origin for all new vessels. Beyond the reach of the Lords.</span>
                     </button>
 
                     <button class="boss-card fire-text standard-card" onclick="enterMap('fire')">
@@ -193,7 +189,7 @@
 
                     <button class="boss-card blood-text featured-card" onclick="enterMap('blood')">
                         <span class="region-name">Cathedral of Ruin</span>
-                        <span class="region-desc">HIGH RISK: The epicenter of Chaos influence. Only the brave or the foolish dare enter these hallowed, bloody halls.</span>
+                        <span class="region-desc">HIGH RISK: The epicenter of Chaos influence.</span>
                     </button>
                 </div>
 
@@ -206,12 +202,9 @@
                     <span class="room-title">CHAOS REALMS</span>
                     <div style="width: 40px;"></div>
                 </div>
-
                 <div class="map-list" id="bossList"></div>
-                
                 <div class="chat-footer"></div>
             </div>
-
         </div>
     </div>
 
@@ -286,7 +279,6 @@
                 list.appendChild(card);
             });
             
-            // Add Drakath
             const drakath = document.createElement('div');
             drakath.className = "boss-card void-text";
             drakath.style.border = "2px solid #ff00ff";
@@ -298,7 +290,59 @@
             list.appendChild(drakath);
         }
 
-        window.enterMap = (id) => { console.log("Entering Zone: " + id); };
+        window.enterMap = (id) => {
+            let targetPage = "";
+            let themeColor = "#62ffe1"; 
+
+            if (id === 'threshold') {
+                targetPage = "threshold_of_souls-map.html";
+                themeColor = "#62ffe1";
+            } else if (id === 'fire') {
+                targetPage = "cinder_scars-map.html";
+                themeColor = "#ff4444";
+            } else if (id === 'water') {
+                targetPage = "sunken_relic-map.html";
+                themeColor = "#44aaff";
+            } else if (id === 'wind') {
+                targetPage = "whisper_spires-map.html";
+                themeColor = "#62ffe1";
+            } else if (id === 'earth') {
+                targetPage = "hollow_bastion-map.html";
+                themeColor = "#aa7744";
+            } else if (id === 'light') {
+                targetPage = "prism_horizon-map.html";
+                themeColor = "#ffffcc";
+            } else if (id === 'shadow') {
+                targetPage = "umbra_expanse-map.html";
+                themeColor = "#bb66ff";
+            } else if (id === 'blood') {
+                targetPage = "cathedral_of_ruin-map.html";
+                themeColor = "#ff0000";
+            }
+
+            if (targetPage !== "") {
+                const overlay = document.createElement('div');
+                overlay.id = "travelOverlay";
+                overlay.style = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: #000; z-index: 9999; display: flex; flex-direction: column;
+                    align-items: center; justify-content: center; color: ${themeColor};
+                    font-family: 'Inter', sans-serif; letter-spacing: 5px; font-size: 0.8rem;
+                `;
+                overlay.innerHTML = `
+                    <div class="spinner" style="border: 2px solid #111; border-top: 2px solid ${themeColor}; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+                    <span>TRAVERSING THE VOID...</span>
+                    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                `;
+                document.body.appendChild(overlay);
+
+                setTimeout(() => {
+                    window.location.href = targetPage;
+                }, 5000);
+            } else {
+                alert("The way to the " + id.toUpperCase() + " region is currently blocked by Chaos energy.");
+            }
+        };
     </script>
 </body>
 </html>

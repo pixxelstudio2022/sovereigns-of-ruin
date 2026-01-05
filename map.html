@@ -6,12 +6,30 @@
     <title>Village Hub - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Mobile-First 400px Container */
-        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; font-family: sans-serif; }
+        /* Mobile-First 400px Container Fix */
+        body { 
+            background: #000; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            /* Fix: Allow vertical scrolling, prevent horizontal wiggle */
+            overflow-x: hidden; 
+            overflow-y: auto; 
+            font-family: sans-serif;
+        }
+
         .game-container { 
-            width: 400px; height: 100vh; background: #000; 
-            display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;
-            position: relative; border-left: 1px solid #111; border-right: 1px solid #111;
+            width: 400px; 
+            /* Fix: min-height allows the container to grow with the button list */
+            min-height: 100vh; 
+            background: #000; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 15px; 
+            box-sizing: border-box;
+            position: relative; 
+            border-left: 1px solid #111; 
+            border-right: 1px solid #111;
         }
 
         /* Dynamic Element Themes */
@@ -47,10 +65,7 @@
         .shards { color: #62ffe1; }
 
         /* Navigation List */
-        .map-locations { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; padding-right: 5px; }
-        .map-locations::-webkit-scrollbar { width: 3px; }
-        .map-locations::-webkit-scrollbar-thumb { background: var(--accent); }
-
+        .map-locations { display: flex; flex-direction: column; gap: 8px; padding-bottom: 20px; }
         .loc-btn {
             background: #0a0a0a; border: 1px solid #1a1a1a; color: #eee;
             padding: 12px; border-radius: 6px; cursor: pointer; text-align: left;
@@ -60,21 +75,20 @@
         .loc-title { font-weight: bold; color: var(--accent); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
         .loc-desc { font-size: 0.6rem; color: #666; margin-top: 3px; line-height: 1.3; }
 
-        /* Settings Modal & Header Logout */
-        .modal-overlay { position: absolute; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; }
+        /* Modal & Logout */
+        .modal-overlay { position: fixed; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; }
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
         
-        .header-logout { color: #ff4444; font-size: 0.65rem; font-weight: bold; cursor: pointer; text-transform: uppercase; border: 1px solid #ff444444; padding: 2px 6px; border-radius: 3px; transition: 0.3s; }
-        .header-logout:hover { background: #ff444422; border-color: #ff4444; }
-
-        .profile-avatar { width: 60px; height: 60px; background: var(--accent); border-radius: 50%; margin: 0 auto 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: #000; font-weight: bold; }
-        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .header-logout { color: #ff4444; font-size: 0.65rem; font-weight: bold; cursor: pointer; text-transform: uppercase; border: 1px solid #ff444444; padding: 2px 6px; border-radius: 3px; }
+        
+        .profile-avatar { width: 60px; height: 60px; background: var(--accent); border-radius: 50%; margin: 0 auto 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: #000; }
+        .profile-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .stat-box { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 10px; border-radius: 4px; text-align: center; }
         .stat-val { display: block; color: var(--accent); font-weight: bold; font-size: 0.9rem; }
         .stat-lbl { font-size: 0.5rem; color: #555; text-transform: uppercase; }
 
-        #loading { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #5eead4; font-weight: bold; letter-spacing: 2px; }
+        #loading { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #5eead4; font-weight: bold; }
     </style>
 </head>
 <body id="bodyTheme" class="theme-Light">
@@ -190,67 +204,42 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- SECURITY & LOGOUT ---
-        let idleTimer;
-        function resetIdleTimer() {
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(() => {
-                alert("The Void reclaimed you due to inactivity.");
-                handleLogout(true); 
-            }, 5 * 60 * 1000); 
-        }
-
-        window.handleLogout = async function(isForced = false) {
-            let confirmChoice = true;
-            if (!isForced) {
-                confirmChoice = confirm("Are you sure you wish to sever your connection to the Void?");
-            }
-            
-            if (confirmChoice) {
-                if (auth.currentUser) {
-                    try {
-                        await updateDoc(doc(db, "players", auth.currentUser.uid), { isOnline: false });
-                        await signOut(auth);
-                    } catch (e) {}
-                }
-                window.location.href = "index.html";
-            }
-        }
-
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 initSecurity(db, auth, user);
                 setupLiveListener(user.uid);
-                resetIdleTimer();
-                ['mousedown', 'mousemove', 'keypress', 'touchstart'].forEach(evt => 
-                    window.addEventListener(evt, resetIdleTimer));
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        // --- SNAPSHOT LISTENER ---
+        window.handleLogout = async function() {
+            if (confirm("Sever your connection to the Void?")) {
+                if (auth.currentUser) {
+                    await updateDoc(doc(db, "players", auth.currentUser.uid), { isOnline: false });
+                    await signOut(auth);
+                }
+                window.location.href = "index.html";
+            }
+        }
+
         function setupLiveListener(uid) {
             onSnapshot(doc(db, "players", uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
                     const s = data.stats;
                     const lvl = data.level || 0;
-
                     document.getElementById('pName').innerText = data.name;
                     document.getElementById('pLvl').innerText = lvl;
                     document.getElementById('pGold').innerText = data.gold;
                     document.getElementById('pShards').innerText = data.shards || 0;
-                    
                     document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
                     document.getElementById('hpLabel').innerText = `HP: ${s.hp}/${s.maxHp}`;
                     document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
                     document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
-                    
                     const expReq = lvl === 0 ? 50 : lvl * 100;
                     document.getElementById('expBar').style.width = (Math.min((data.xp || 0) / expReq, 1) * 100) + "%";
                     document.getElementById('expLabel').innerText = `EXP: ${data.xp || 0}/${expReq}`;
-
                     document.getElementById('mod-name').innerText = data.name;
                     document.getElementById('mod-element').innerText = data.element;
                     document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
@@ -258,7 +247,6 @@
                     document.getElementById('mod-mana').innerText = s.maxMana;
                     document.getElementById('mod-gold').innerText = data.gold;
                     document.getElementById('mod-shards').innerText = data.shards || 0;
-
                     document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     document.getElementById('loading').style.display = 'none';
                 }

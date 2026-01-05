@@ -6,8 +6,17 @@
     <title>The Wildlands - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Mobile-First Layout (400px) */
-        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; height: 100dvh; font-family: 'Inter', sans-serif; }
+        /* Mobile-First Layout & Scroll Fix */
+        body { 
+            background: #000; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            height: 100dvh; 
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; /* Lock the body to allow the inner container to scroll */
+            touch-action: pan-y;
+        }
         
         .scene {
             width: 400px;
@@ -23,11 +32,8 @@
             transform-style: preserve-3d;
         }
 
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
+        .card.is-flipped { transform: rotateY(180deg); }
 
-        /* Face Styling */
         .card-face {
             position: absolute;
             width: 100%;
@@ -41,24 +47,38 @@
             box-sizing: border-box;
         }
 
-        .card-face-back {
-            transform: rotateY(180deg);
+        .card-face-back { transform: rotateY(180deg); }
+
+        /* HEADER & FOOTER */
+        .chat-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #000;
+            border-bottom: 1px solid #111;
+            z-index: 10;
         }
 
-        /* Map List & Scrollbar */
+        .back-btn { color: #5eead4; text-decoration: none; font-size: 0.8rem; cursor: pointer; }
+        .room-title { color: #eee; font-size: 0.8rem; font-weight: bold; letter-spacing: 2px; }
+        .flip-trigger { cursor: pointer; color: #44ff44; font-size: 1.4rem; padding: 5px; }
+
+        /* SCROLLABLE LIST (The Fix) */
         .map-list {
             flex-grow: 1;
-            overflow-y: auto;
+            overflow-y: auto !important; /* Ensure this is scrollable */
             padding: 15px;
             display: flex;
             flex-direction: column;
             gap: 16px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .map-list::-webkit-scrollbar { width: 3px; }
         .map-list::-webkit-scrollbar-thumb { background: #333; }
 
-        /* Boss Card Styling */
+        /* BOSS CARD STYLING */
         .boss-card {
             background: #050505;
             border: 1px solid #1a1a1a;
@@ -67,25 +87,15 @@
             display: flex;
             flex-direction: column;
             transition: 0.3s;
+            flex-shrink: 0; /* Important: keeps cards from collapsing */
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        .region-name {
-            font-weight: bold;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
+        .region-name { font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+        .region-desc { font-size: 0.65rem; color: #888; line-height: 1.3; font-style: italic; margin-bottom: 12px; }
 
-        .region-desc {
-            font-size: 0.65rem;
-            color: #888;
-            line-height: 1.3;
-            font-style: italic;
-            margin-bottom: 12px;
-        }
-
-        /* The Challenge Button (Locked State) */
         .challenge-btn {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid #222;
@@ -94,14 +104,11 @@
             font-size: 0.7rem;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
             border-radius: 4px;
             cursor: not-allowed;
-            transition: 0.3s;
-            text-align: center;
         }
 
-        /* Elemental Color Palette - Applied to Card Borders and Text */
+        /* ELEMENTAL COLORS */
         .fire-text { color: #ff4444; border-color: #ff444444; }
         .water-text { color: #44aaff; border-color: #44aaff44; }
         .wind-text { color: #62ffe1; border-color: #62ffe144; }
@@ -112,15 +119,7 @@
         .blood-text { color: #880000; border-color: #88000044; }
         .neutral-text { color: #eee; border-color: #333; }
 
-        /* Navigation elements */
-        .flip-trigger { cursor: pointer; color: #44ff44; font-size: 1.4rem; padding: 5px 10px; transition: 0.3s; }
-        .flip-trigger:hover { text-shadow: 0 0 10px #44ff44; }
-
-        .drakath-card {
-            border: 2px solid #ff00ff !important;
-            background: linear-gradient(180deg, #050505 0%, #1a0033 100%) !important;
-            margin-top: 10px;
-        }
+        .drakath-card { border: 2px solid #ff00ff !important; background: linear-gradient(180deg, #050505 0%, #1a0033 100%) !important; margin-top: 10px; }
     </style>
 </head>
 <body id="bodyTheme">
@@ -135,52 +134,51 @@
                 </div>
 
                 <div class="map-list">
-                    <button class="boss-card neutral-text" style="cursor:pointer;" onclick="enterMap('threshold')">
+                    <button class="boss-card neutral-text" onclick="enterMap('threshold')">
                         <span class="region-name">Threshold of Souls</span>
                         <span class="region-desc">The neutral origin for all new vessels.</span>
                     </button>
 
-                    <button class="boss-card fire-text" style="cursor:pointer;" onclick="enterMap('fire')">
+                    <button class="boss-card fire-text" onclick="enterMap('fire')">
                         <span class="region-name">The Cinder Scars</span>
                         <span class="region-desc">Scorched earth and molten fury.</span>
                     </button>
 
-                    <button class="boss-card water-text" style="cursor:pointer;" onclick="enterMap('water')">
+                    <button class="boss-card water-text" onclick="enterMap('water')">
                         <span class="region-name">Sunken Reliquary</span>
                         <span class="region-desc">Silent aquatic ruins of the deep.</span>
                     </button>
 
-                    <button class="boss-card wind-text" style="cursor:pointer;" onclick="enterMap('wind')">
+                    <button class="boss-card wind-text" onclick="enterMap('wind')">
                         <span class="region-name">Whispering Spires</span>
                         <span class="region-desc">High peaks where air is a blade.</span>
                     </button>
 
-                    <button class="boss-card earth-text" style="cursor:pointer;" onclick="enterMap('earth')">
+                    <button class="boss-card earth-text" onclick="enterMap('earth')">
                         <span class="region-name">Hollowed Bastion</span>
                         <span class="region-desc">Subterranean world-root fortresses.</span>
                     </button>
 
-                    <button class="boss-card light-text" style="cursor:pointer;" onclick="enterMap('light')">
+                    <button class="boss-card light-text" onclick="enterMap('light')">
                         <span class="region-name">Prism Horizon</span>
                         <span class="region-desc">Landscape of pure energy form.</span>
                     </button>
 
-                    <button class="boss-card shadow-text" style="cursor:pointer;" onclick="enterMap('shadow')">
+                    <button class="boss-card shadow-text" onclick="enterMap('shadow')">
                         <span class="region-name">Umbra Expanse</span>
                         <span class="region-desc">The dark mirror of the world.</span>
                     </button>
 
-                    <button class="boss-card void-text" style="cursor:pointer;" onclick="enterMap('void')">
+                    <button class="boss-card void-text" onclick="enterMap('void')">
                         <span class="region-name">Fractured Boundary</span>
                         <span class="region-desc">The edge of existence.</span>
                     </button>
 
-                    <button class="boss-card blood-text" style="cursor:pointer;" onclick="enterMap('blood')">
+                    <button class="boss-card blood-text" onclick="enterMap('blood')">
                         <span class="region-name">Cathedral of Ruin</span>
                         <span class="region-desc">High Risk. Center of Chaos influence.</span>
                     </button>
                 </div>
-                <div class="chat-footer"></div>
             </div>
 
             <div class="card-face card-face-back">
@@ -192,7 +190,6 @@
 
                 <div class="map-list" id="bossList">
                     </div>
-                <div class="chat-footer"></div>
             </div>
 
         </div>
@@ -224,9 +221,7 @@
                     document.body.className = `theme-${myProfile.element}`;
                     generateChaosLords();
                 }
-            } else {
-                window.location.href = "index.html";
-            }
+            } else { window.location.href = "index.html"; }
         });
 
         window.flipPage = () => {
@@ -235,37 +230,34 @@
 
         function generateChaosLords() {
             const list = document.getElementById('bossList');
+            list.innerHTML = "";
             
             const lords = [
-                { name: "Escherion", desc: "The Mage of Inversion. Reality is his plaything.", elem: "wind-text" },
-                { name: "Vath", desc: "The Dragonlord. He commands the fire-breath of the abyss.", elem: "blood-text" }, 
-                { name: "Kitsune", desc: "A shape-shifting fox spirit with nine deadly tails.", elem: "light-text" },
-                { name: "Wolfwing", desc: "The hybrid terror. A master of tooth, claw, and wing.", elem: "blood-text" },
-                { name: "Kimberly", desc: "Her melody is a chaotic symphony of destruction.", elem: "water-text" },
-                { name: "Ledgermayne", desc: "The living embodiment of corrupted mana.", elem: "void-text" },
-                { name: "Tibicenas", desc: "A chaos djinn that grants only nightmares.", elem: "fire-text" },
-                { name: "Khasaanda", desc: "She sees your death before it even happens.", elem: "earth-text" },
-                { name: "Lionfang", desc: "A fallen general who sold his soul for order.", elem: "light-text" },
-                { name: "King Alteon's Ghost", desc: "The hollow spirit of a ruler who failed his world.", elem: "shadow-text" },
-                { name: "Xiang", desc: "The weaver of the 12 chaotic fates.", elem: "wind-text" },
-                { name: "Desoloth", desc: "An ancient dragon whose breath resets timelines.", elem: "void-text" },
-                { name: "Lord Malgor", desc: "The Architect of the Shadow Realm.", elem: "earth-text" }, 
-                { name: "Sepulchure's Ghost", desc: "The undead knight who refuses to rest.", elem: "blood-text" },
-                { name: "Nulgath", desc: "The Archfiend. His contracts are signed in soul-fire.", elem: "void-text" },
-                { name: "Tobi", desc: "The man behind the mask. A phantom of the Great War.", elem: "fire-text" },
-                { name: "Ultra Doom Kitten", desc: "Don't let the name fool you. It has ended universes.", elem: "water-text" },
-                { name: "Lord Commander", desc: "Leader of the Void Fleets. He bows to no one.", elem: "light-text" },
-                { name: "The Ghost of the Uchiha", desc: "A legend of the sharingan, back from the grave.", elem: "fire-text" },
-                { name: "Gojo The Limitless", desc: "The strongest. Within his domain, everything is void.", elem: "shadow-text" }
+                { name: "Escherion", desc: "The Mage of Inversion.", elem: "wind-text" },
+                { name: "Vath", desc: "The Dragonlord.", elem: "blood-text" }, 
+                { name: "Kitsune", desc: "A shape-shifting fox spirit.", elem: "light-text" },
+                { name: "Wolfwing", desc: "The hybrid terror.", elem: "blood-text" },
+                { name: "Kimberly", desc: "The Discordant Diva.", elem: "water-text" },
+                { name: "Ledgermayne", desc: "Living embodiment of corrupted mana.", elem: "void-text" },
+                { name: "Tibicenas", desc: "A chaos djinn.", elem: "fire-text" },
+                { name: "Khasaanda", desc: "Sees death before it happens.", elem: "earth-text" },
+                { name: "Lionfang", desc: "Fallen general of the Golden Onslaught.", elem: "light-text" },
+                { name: "King Alteon's Ghost", desc: "Hollow spirit of a failed ruler.", elem: "shadow-text" },
+                { name: "Xiang", desc: "Weaver of the 12 chaotic fates.", elem: "wind-text" },
+                { name: "Desoloth", desc: "Ancient dragon of the void.", elem: "void-text" },
+                { name: "Lord Malgor", desc: "Architect of the Shadow Realm.", elem: "earth-text" }, 
+                { name: "Sepulchure's Ghost", desc: "The undead knight.", elem: "blood-text" },
+                { name: "Nulgath", desc: "The Archfiend of the Abyss.", elem: "void-text" },
+                { name: "Tobi", desc: "A phantom of the Great War.", elem: "fire-text" },
+                { name: "Ultra Doom Kitten", desc: "Destroyer of Universes.", elem: "water-text" },
+                { name: "Lord Commander", desc: "Leader of the Void Fleets.", elem: "light-text" },
+                { name: "The Ghost of the Uchiha", desc: "Legend of the Sharingan.", elem: "fire-text" },
+                { name: "Gojo The Limitless", desc: "The Strongest Sorcerer.", elem: "shadow-text" }
             ];
 
             lords.forEach((lord, i) => {
                 const card = document.createElement('div');
                 card.className = `boss-card ${lord.elem}`;
-                
-                // Final Elite Marker
-                if(i >= 14) card.style.borderLeft = "4px solid inherit";
-                
                 card.innerHTML = `
                     <span class="region-name">Lord ${i+1}: ${lord.name}</span>
                     <span class="region-desc">${lord.desc}</span>
@@ -274,20 +266,17 @@
                 list.appendChild(card);
             });
 
-            // FINAL BOSS: DRAKATH
             const drakath = document.createElement('div');
             drakath.className = "boss-card void-text drakath-card";
             drakath.innerHTML = `
                 <span class="region-name" style="color:#ff00ff">CHAMPION: DRAKATH</span>
-                <span class="region-desc" style="color:#ff4444">The King of Chaos. The end of all things.</span>
+                <span class="region-desc" style="color:#ff4444">The end of all things.</span>
                 <button class="challenge-btn" disabled style="color:#666">Sovereign Ascension Only</button>
             `;
             list.appendChild(drakath);
         }
 
-        window.enterMap = (id) => {
-            alert("Entering Zone: " + id);
-        };
+        window.enterMap = (id) => { alert("Entering Zone: " + id); };
     </script>
 </body>
 </html>

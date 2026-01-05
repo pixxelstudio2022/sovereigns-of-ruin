@@ -108,8 +108,7 @@
             <span class="tab" data-element="Shadow">🌑</span>
         </div>
 
-        <div class="spell-list" id="spellList">
-            </div>
+        <div class="spell-list" id="spellList"></div>
 
         <div class="shop-footer">
             <div class="gold-display">GOLD: <span id="pGold">----</span></div>
@@ -135,7 +134,16 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Spell Database
+        // Spell Icons mapping for Inventory consistency
+        const spellIcons = {
+            'Fireball': '🔥', 'Inferno Blast': '💥',
+            'Tidal Wave': '🌊', 'Frost Bite': '❄️',
+            'Gale Blade': '🌪️', 'Cyclone Step': '💨',
+            'Stone Skin': '🛡️', 'Quake': '🌋',
+            'Heal': '✨', 'Purge': '☀️',
+            'Void Bolt': '🔮', 'Soul Reap': '💀'
+        };
+
         const spells = {
             Fire: [
                 { id: 'f1', name: 'Fireball', cost: 300, desc: '20 Mana | Launch a sphere of flame.' },
@@ -177,20 +185,16 @@
                         <span class="spell-name">${spell.name}</span>
                         <span class="spell-desc">${spell.desc}</span>
                     </div>
-                    <button class="buy-btn" onclick="purchaseSpell('${spell.id}', ${spell.cost}, '${spell.name}')">${spell.cost} G</button>
+                    <button class="buy-btn" onclick="purchaseSpell('${spell.id}', ${spell.cost}, '${spell.name}', '${spell.desc}')">${spell.cost} G</button>
                 `;
                 list.appendChild(card);
             });
         }
 
-        // Handle Tab Clicks
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                // UI update
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                
-                // Content update
                 currentElement = tab.getAttribute('data-element');
                 renderSpells(currentElement);
             });
@@ -206,30 +210,40 @@
                         document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     }
                 });
-                renderSpells("Fire"); // Initial Load
+                renderSpells("Fire");
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        // Global function for the buttons
-        window.purchaseSpell = async (id, cost, name) => {
+        window.purchaseSpell = async (id, cost, name, desc) => {
             const user = auth.currentUser;
             const playerRef = doc(db, "players", user.uid);
             const snap = await getDoc(playerRef);
             const data = snap.data();
 
+            // Check if already owned (must check name inside objects now)
+            const inventory = data.inventory || [];
+            const isOwned = inventory.some(item => typeof item === 'object' && item.name === name);
+
             if (data.gold >= cost) {
-                if (data.inventory && data.inventory.includes(name)) {
-                    alert("You already know this spell!");
+                if (isOwned) {
+                    alert("This manuscript is already in your possession.");
                     return;
                 }
                 
                 await updateDoc(playerRef, {
                     gold: data.gold - cost,
-                    inventory: arrayUnion(name)
+                    inventory: arrayUnion({
+                        itemId: id,
+                        name: name,
+                        type: 'manuscript', // Categorizes it for the 'Arcane' tab in inventory
+                        stats: desc.split('|')[0].trim(), // Grabs the "Mana" requirement
+                        icon: spellIcons[name] || '📜',
+                        acquiredAt: new Date().toISOString()
+                    })
                 });
-                alert(`Learned ${name}!`);
+                alert(`Manuscript Acquired: ${name}`);
             } else {
                 alert("Insufficient Gold!");
             }

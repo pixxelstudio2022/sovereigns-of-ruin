@@ -42,6 +42,8 @@
         .theme-Earth { --accent: #aa7744; }
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
+        .theme-Soul { --accent: #62ffe1; }
+        .theme-Void { --accent: #bf66ff; }
 
         /* TOP BAR */
         .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; align-items: center; }
@@ -54,7 +56,7 @@
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
         .resource-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-        .bar-container { background: #111; height: 10px; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; }
+        .bar-container { background: #111; height: 100%; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; height: 10px; }
         .bar-fill { height: 100%; transition: width 0.5s ease; }
         .hp-fill { background: #ff4444; }
         .mana-fill { background: #44aaff; }
@@ -65,7 +67,7 @@
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
-        /* COMPACT GRID NAVIGATION - NO SCROLL */
+        /* GRID NAVIGATION */
         .map-locations { 
             flex-grow: 1;
             display: grid;
@@ -84,10 +86,19 @@
             transition: 0.2s; position: relative;
         }
 
-        .loc-tile:hover, .loc-tile.special:hover { 
+        .loc-tile:hover { 
             border-color: var(--accent); 
             background: #111; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* DANGER PULSE FOR REST */
+        .pulse-rest {
+            animation: rest-glow 2s infinite;
+        }
+        @keyframes rest-glow {
+            0% { border-color: #1a1a1a; box-shadow: 0 0 0px transparent; }
+            50% { border-color: #ff4444; box-shadow: inset 0 0 10px rgba(255,68,68,0.2); }
+            100% { border-color: #1a1a1a; box-shadow: 0 0 0px transparent; }
         }
 
         .tile-icon { font-size: 1.4rem; margin-bottom: 5px; }
@@ -198,6 +209,11 @@
                 <span class="tile-title">The Forge</span>
                 <span class="tile-desc">Temper Gear</span>
             </div>
+            <div id="restTile" class="loc-tile" onclick="window.location.href='rest.html'">
+                <span class="tile-icon">🧘</span>
+                <span class="tile-title">The Hollow</span>
+                <span class="tile-desc">Rest & Recover</span>
+            </div>
             <div class="loc-tile special" onclick="window.location.href='inventory.html'">
                 <span class="tile-icon">📦</span>
                 <span class="tile-title">Inventory</span>
@@ -207,11 +223,6 @@
                 <span class="tile-icon">💬</span>
                 <span class="tile-title">Echoes</span>
                 <span class="tile-desc">Global Chat</span>
-            </div>
-            <div class="loc-tile" onclick="window.location.href='minigame.html'">
-                <span class="tile-icon">🧩</span>
-                <span class="tile-title">Riddle</span>
-                <span class="tile-desc">Lore Quiz</span>
             </div>
         </div>
 
@@ -267,19 +278,25 @@
                 if (snap.exists()) {
                     const data = snap.data();
                     const s = data.stats;
+                    
+                    // Update HUD
                     document.getElementById('pName').innerText = data.name;
                     document.getElementById('pLvl').innerText = data.level || 0;
                     document.getElementById('pGold').innerText = data.gold;
                     document.getElementById('pShards').innerText = data.shards || 0;
-                    document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
-                    document.getElementById('hpLabel').innerText = `HP: ${s.hp}/${s.maxHp}`;
+                    
+                    const hpPer = (s.hp / s.maxHp * 100);
+                    document.getElementById('hpBar').style.width = hpPer + "%";
+                    document.getElementById('hpLabel').innerText = `HP: ${Math.floor(s.hp)}/${s.maxHp}`;
+                    
                     document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
-                    document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
+                    document.getElementById('manaLabel').innerText = `MANA: ${Math.floor(s.mana)}/${s.maxMana}`;
                     
                     const expReq = (data.level || 0) === 0 ? 50 : (data.level || 0) * 100;
                     document.getElementById('expBar').style.width = (Math.min((data.xp || 0) / expReq, 1) * 100) + "%";
                     document.getElementById('expLabel').innerText = `EXP: ${data.xp || 0}/${expReq}`;
                     
+                    // Update Modal
                     document.getElementById('mod-name').innerText = data.name;
                     document.getElementById('mod-element').innerText = data.element;
                     document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
@@ -288,6 +305,13 @@
                     document.getElementById('mod-gold').innerText = data.gold;
                     document.getElementById('mod-shards').innerText = data.shards || 0;
                     
+                    // Logic: Pulse the Rest tile if HP is below 30%
+                    if (hpPer < 30) {
+                        document.getElementById('restTile').classList.add('pulse-rest');
+                    } else {
+                        document.getElementById('restTile').classList.remove('pulse-rest');
+                    }
+
                     document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     document.getElementById('loading').style.display = 'none';
                 }

@@ -6,7 +6,7 @@
     <title>Vessel Inventory - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: sans-serif; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         .game-window {
             width: 400px;
@@ -16,155 +16,131 @@
             flex-direction: column;
             border-left: 1px solid #111;
             border-right: 1px solid #111;
+            position: relative;
         }
 
         /* TOP NAVIGATION */
-        .top-nav {
-            padding: 15px 20px;
-            border-bottom: 1px solid #111;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .top-nav { padding: 15px 20px; border-bottom: 1px solid #111; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        .back-link { color: #444; text-decoration: none; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
 
-        .back-link {
-            color: #444;
-            text-decoration: none;
+        /* HEALING BANNER */
+        #restBanner {
+            display: none;
+            background: linear-gradient(90deg, #440000, #880000, #440000);
+            color: #fff;
             font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: bold;
-        }
-
-        /* HEADER */
-        .inv-header {
-            padding: 20px 15px;
             text-align: center;
-            flex-shrink: 0;
-        }
-        .inv-header h1 {
-            color: var(--accent, #62ffe1);
-            font-size: 1rem;
-            letter-spacing: 4px;
-            margin: 0;
-            text-transform: uppercase;
-        }
-
-        /* CATEGORY TABS */
-        .inv-tabs {
-            display: flex;
-            border-bottom: 1px solid #111;
-            background: #050505;
-        }
-        .inv-tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            font-size: 0.65rem;
-            color: #444;
+            padding: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            cursor: pointer;
-            transition: 0.3s;
             font-weight: bold;
-        }
-        .inv-tab.active {
-            color: var(--accent, #62ffe1);
-            border-bottom: 2px solid var(--accent, #62ffe1);
-            background: #0a0a0a;
+            cursor: pointer;
+            border-bottom: 1px solid #ff000033;
         }
 
-        /* GRID LIST */
-        .inv-content {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            align-content: start;
-        }
+        /* HEADER & STATUS */
+        .inv-header { padding: 15px 15px 5px 15px; text-align: center; flex-shrink: 0; }
+        .inv-header h1 { color: var(--accent, #62ffe1); font-size: 0.9rem; letter-spacing: 4px; margin: 0; text-transform: uppercase; }
 
-        .item-card {
-            background: #0a0a0a;
-            border: 1px solid #1a1a1a;
-            border-radius: 6px;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            animation: slideIn 0.3s ease;
-        }
+        /* VITALS UI */
+        .vitals-container { padding: 12px 20px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #111; background: #050505; }
+        .vital-text { display: flex; justify-content: space-between; font-size: 0.55rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; color: #555; margin-bottom: 2px; }
+        .vital-val { color: #eee; font-family: monospace; }
+        
+        .vital-bar-wrap { width: 100%; height: 8px; background: #111; border-radius: 2px; position: relative; overflow: hidden; border: 1px solid #1a1a1a; }
+        .vital-fill { height: 100%; width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .hp-fill { background: linear-gradient(90deg, #ff4444, #ff6b6b); box-shadow: 0 0 12px rgba(255,68,68,0.4); }
+        .mp-fill { background: linear-gradient(90deg, #22ccff, #62d9ff); box-shadow: 0 0 12px rgba(34,204,255,0.4); }
 
+        /* CATEGORY TABS */
+        .inv-tabs { display: flex; border-bottom: 1px solid #111; background: #050505; }
+        .inv-tab { flex: 1; padding: 15px; text-align: center; font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .inv-tab.active { color: var(--accent, #62ffe1); border-bottom: 2px solid var(--accent, #62ffe1); background: #0a0a0a; }
+
+        /* CONTENT */
+        .inv-content { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .inv-content::-webkit-scrollbar { width: 4px; }
+        .inv-content::-webkit-scrollbar-thumb { background: #111; }
+        
+        .item-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease; transition: 0.3s; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-        .item-icon {
-            width: 40px;
-            height: 40px;
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 4px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-        }
-
+        .item-icon { width: 45px; height: 45px; background: #111; border: 1px solid #222; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; flex-shrink: 0; transition: 0.3s; }
         .item-details { flex-grow: 1; }
-        .item-name { display: block; color: #eee; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
-        .item-type { display: block; color: #444; font-size: 0.55rem; text-transform: uppercase; margin-top: 2px; }
+        .item-name { display: block; color: #eee; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .item-count { font-size: 0.6rem; margin-left: 5px; opacity: 0.7; }
+        .item-type { display: block; color: #555; font-size: 0.55rem; text-transform: uppercase; margin-top: 3px; }
 
-        .empty-msg {
-            color: #222;
-            text-align: center;
-            font-size: 0.7rem;
-            margin-top: 40px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        .use-btn { background: transparent; border: 1px solid var(--accent, #62ffe1); color: var(--accent, #62ffe1); font-size: 0.55rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: 0.2s; }
+        .use-btn:hover { background: var(--accent, #62ffe1); color: #000; }
+
+        /* SIDE SKILL MENU */
+        .skill-side-menu { position: absolute; right: -100%; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; display: flex; justify-content: flex-end; visibility: hidden; }
+        .skill-side-menu.active { right: 0; visibility: visible; }
+        .menu-content { width: 85%; height: 100%; background: #050505; border-left: 1px solid #222; padding: 30px 20px; box-sizing: border-box; display: flex; flex-direction: column; }
+        .slot-card { background: #0d0d0d; border: 1px solid #1a1a1a; padding: 12px; margin-bottom: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .slot-info { display: flex; flex-direction: column; gap: 4px; }
+        .slot-label { font-size: 0.5rem; color: #444; text-transform: uppercase; letter-spacing: 1px; }
+        .slot-skill { font-size: 0.7rem; color: #fff; font-weight: bold; }
+        .assign-btn { background: none; border: 1px solid var(--accent); color: var(--accent); font-size: 0.55rem; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
         /* FOOTER */
-        .inv-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #111;
-            background: #050505;
-        }
-        .stat-row { display: flex; gap: 20px; }
+        .inv-footer { padding: 15px 20px; border-top: 1px solid #111; background: #050505; }
+        .stat-row { display: flex; justify-content: space-between; }
         .stat-label { color: #444; font-size: 0.6rem; text-transform: uppercase; font-weight: bold; }
         .stat-val { color: var(--accent, #62ffe1); margin-left: 5px; }
 
-        /* THEMES */
         .theme-Fire { --accent: #ff4444; }
-        .theme-Water { --accent: #44aaff; }
-        .theme-Wind { --accent: #62ffe1; }
-        .theme-Earth { --accent: #aa7744; }
-        .theme-Light { --accent: #ffffcc; }
-        .theme-Shadow { --accent: #bb66ff; }
+        .theme-Water { --accent: #22ccff; }
+        .theme-Air { --accent: #a8ff62; }
+        .theme-Earth { --accent: #ffcc66; }
+        .theme-Soul { --accent: #62ffe1; }
+        .theme-Void { --accent: #bf66ff; }
     </style>
 </head>
 <body id="bodyTheme">
 
     <div class="game-window">
+        <div id="restBanner" onclick="window.location.href='rest.html'">
+            Healing in progress... Tap to return to the Rest
+        </div>
+
+        <div id="skillMenu" class="skill-side-menu">
+            <div class="menu-content">
+                <h3 style="letter-spacing: 2px; font-size: 0.8rem; margin-top: 0;">EQUIP ABILITY</h3>
+                <p id="equippingName" style="font-size: 0.6rem; color: #555; margin-bottom: 30px;"></p>
+                <div id="skillSlotsContainer"></div>
+                <button id="closeMenuBtn" onclick="window.closeEquipMenu()" class="back-link" style="margin-top: auto; border: none; background: none; cursor: pointer; text-align: left; padding: 10px 0;">[ CLOSE ]</button>
+            </div>
+        </div>
+
         <div class="top-nav">
-            <a href="map.html" class="back-link">← Return to Map</a>
+            <a href="wildlands.html" class="back-link">← Wildlands</a>
         </div>
 
         <div class="inv-header">
             <h1>Possessions</h1>
         </div>
 
-        <div class="inv-tabs">
-            <div class="inv-tab active" data-cat="gear">Gear</div>
-            <div class="inv-tab" data-cat="arcane">Arcane</div>
+        <div class="vitals-container">
+            <div class="vital-text"><span>Vitality</span><span id="txt-hp" class="vital-val">0/0</span></div>
+            <div class="vital-bar-wrap"><div id="bar-hp" class="vital-fill hp-fill"></div></div>
+            
+            <div class="vital-text"><span>Essence</span><span id="txt-mp" class="vital-val">0/0</span></div>
+            <div class="vital-bar-wrap"><div id="bar-mp" class="vital-fill mp-fill"></div></div>
         </div>
 
-        <div class="inv-content" id="invContent">
-            </div>
+        <div class="inv-tabs">
+            <div id="tab-gear" class="inv-tab active" onclick="window.switchTab('gear')">Gear</div>
+            <div id="tab-arcane" class="inv-tab" onclick="window.switchTab('arcane')">Arcane</div>
+        </div>
+
+        <div class="inv-content" id="invContent"></div>
 
         <div class="inv-footer">
             <div class="stat-row">
-                <span class="stat-label">Weight: <span class="stat-val" id="invWeight">0/20</span></span>
+                <span class="stat-label">Weight: <span class="stat-val" id="invWeight">0/25</span></span>
                 <span class="stat-label">Gold: <span class="stat-val" id="pGold">0</span></span>
             </div>
         </div>
@@ -173,15 +149,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
             authDomain: "sovereigns-of-ruin.firebaseapp.com", 
             projectId: "sovereigns-of-ruin", 
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
-            messagingSenderId: "1098142064736", 
             appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
@@ -191,81 +165,210 @@
 
         let currentCategory = 'gear';
         let playerData = null;
+        let userId = null;
+        let selectedSpellToEquip = null;
 
-        const spellIcons = {
-            'Fireball': '🔥', 'Inferno Blast': '💥',
-            'Tidal Wave': '🌊', 'Frost Bite': '❄️',
-            'Gale Blade': '🌪️', 'Cyclone Step': '💨',
-            'Stone Skin': '🪨', 'Quake': '🌋',
-            'Heal': '✨', 'Purge': '☀️',
-            'Void Bolt': '🔮', 'Soul Reap': '💀'
+        const starters = { "Fire": "Ember", "Water": "Splash", "Air": "Gale", "Earth": "Pebble Toss", "Soul": "Spirit Bolt", "Void": "Shadow Step" };
+        const elementColors = { soul: "#62ffe1", fire: "#ff4444", air: "#a8ff62", water: "#22ccff", earth: "#ffcc66", void: "#bf66ff" };
+        const iconMap = { 'Fireball': '🔥', 'Heal': '✨', 'Health Potion': '🧪', 'Health Tonic': '🍷', 'Mana Potion': '⚗️', 'Mana Core': '🧪', 'Tidal Wave': '🌊', 'Inferno Blast': '💥', 'Frost Bite': '❄️', 'Ember': '🔥', 'Splash': '💧', 'Gale': '💨', 'Pebble Toss': '🪨', 'Spirit Bolt': '✨', 'Shadow Step': '🌑' };
+        
+        const spellElementMap = {
+            'fire': 'fire', 'ember': 'fire', 'inferno': 'fire', 'blast': 'fire', 'tonic': 'fire',
+            'water': 'water', 'tidal': 'water', 'wave': 'water', 'splash': 'water', 'frost': 'water', 'core': 'water',
+            'gale': 'air', 'air': 'air', 'wind': 'air', 'cyclone': 'air',
+            'earth': 'earth', 'stone': 'earth', 'pebble': 'earth', 'quake': 'earth',
+            'soul': 'soul', 'spirit': 'soul', 'bolt': 'soul', 'heal': 'soul',
+            'void': 'void', 'shadow': 'void', 'dark': 'void'
         };
 
-        const gearIcons = {
-            'Broken Crown': '👑', 'Iron Visor': '⛑️',
-            'Leather Tunic': '👕', 'Iron Plate': '🛡️'
+        const arcaneList = ['Fireball', 'Inferno Blast', 'Tidal Wave', 'Frost Bite', 'Gale Blade', 'Cyclone Step', 'Stone Skin', 'Quake', 'Heal', 'Purge', 'Void Bolt', 'Soul Reap', ...Object.values(starters)];
+
+        const menuEl = document.getElementById('skillMenu');
+
+        window.openEquipMenu = (spellName) => {
+            selectedSpellToEquip = spellName;
+            document.getElementById('equippingName').innerText = `Select slot for ${spellName}`;
+            menuEl.classList.add('active');
+            renderSlots();
         };
+
+        window.closeEquipMenu = () => {
+            menuEl.classList.remove('active');
+            selectedSpellToEquip = null;
+        };
+
+        window.switchTab = (cat) => {
+            currentCategory = cat;
+            document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${cat}`).classList.add('active');
+            renderInventory();
+        };
+
+        window.confirmEquip = async (slotIndex) => {
+            if (!selectedSpellToEquip || !userId || !playerData.skills) return;
+            if (playerData.skills.includes(selectedSpellToEquip)) {
+                alert("Ability already equipped.");
+                return;
+            }
+            let updatedSkills = [...playerData.skills];
+            updatedSkills[slotIndex] = selectedSpellToEquip;
+            try {
+                await updateDoc(doc(db, "players", userId), { skills: updatedSkills });
+                window.closeEquipMenu();
+            } catch (e) { alert("Failed to bind skill."); }
+        };
+
+        function renderSlots() {
+            const container = document.getElementById('skillSlotsContainer');
+            if (!container || !playerData) return;
+            container.innerHTML = '';
+            const currentSkills = playerData.skills || [starters[playerData.element] || "Strike", null, null, null];
+            currentSkills.forEach((skill, index) => {
+                const isStarter = index === 0;
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'slot-card';
+                slotDiv.innerHTML = `
+                    <div class="slot-info">
+                        <span class="slot-label">Slot ${index + 1} ${isStarter ? '(Locked)' : ''}</span>
+                        <span class="slot-skill">${skill || '---'}</span>
+                    </div>
+                    ${!isStarter ? `<button class="assign-btn" onclick="window.confirmEquip(${index})">ASSIGN</button>` : ''}
+                `;
+                container.appendChild(slotDiv);
+            });
+        }
+
+        window.triggerUse = async (itemName, originalIndex) => {
+            if (!playerData || !userId || !playerData.stats) return;
+
+            // RESTING GUARD: Prevent wasting resources while meditating
+            if (playerData.isResting) {
+                const proceed = confirm("Your vessel is currently meditating. Using a potion now may be redundant. Proceed anyway?");
+                if (!proceed) return;
+            }
+
+            let stats = { ...playerData.stats };
+            let used = false;
+
+            const nameLower = itemName.toLowerCase();
+            if (nameLower.includes('health') || nameLower.includes('tonic')) {
+                const healAmt = 50;
+                if (stats.hp >= stats.maxHp) { alert("Vitality is full."); return; }
+                stats.hp = Math.min(stats.hp + healAmt, stats.maxHp);
+                used = true;
+            } else if (nameLower.includes('mana') || nameLower.includes('core')) {
+                const manaAmt = 30;
+                if (stats.mana >= stats.maxMana) { alert("Essence is full."); return; }
+                stats.mana = Math.min(stats.mana + manaAmt, stats.maxMana);
+                used = true;
+            }
+
+            if (used) {
+                const newInv = [...playerData.inventory];
+                newInv.splice(originalIndex, 1);
+                await updateDoc(doc(db, "players", userId), { 
+                    inventory: newInv,
+                    stats: stats
+                });
+            }
+        };
+
+        function updateVitalsUI() {
+            if (!playerData || !playerData.stats) return;
+            const hp = playerData.stats.hp || 0;
+            const maxHp = playerData.stats.maxHp || 100;
+            const mana = playerData.stats.mana || 0;
+            const maxMana = playerData.stats.maxMana || 50;
+
+            const hpPercent = (hp / maxHp) * 100;
+            const manaPercent = (mana / maxMana) * 100;
+
+            document.getElementById('txt-hp').innerText = `${Math.floor(hp)}/${maxHp}`;
+            document.getElementById('txt-mp').innerText = `${Math.floor(mana)}/${maxMana}`;
+            document.getElementById('bar-hp').style.width = `${Math.max(0, Math.min(100, hpPercent))}%`;
+            document.getElementById('bar-mp').style.width = `${Math.max(0, Math.min(100, manaPercent))}%`;
+            
+            // Toggle Rest Banner Visibility
+            document.getElementById('restBanner').style.display = playerData.isResting ? 'block' : 'none';
+        }
 
         function renderInventory() {
             const container = document.getElementById('invContent');
+            if (!playerData || !container) return;
             container.innerHTML = '';
-            
-            const items = playerData.inventory || [];
-            
-            // Filter logic based on tab
-            const filtered = items.filter(itemName => {
-                const isSpell = spellIcons[itemName];
-                return currentCategory === 'arcane' ? isSpell : !isSpell;
+            const inventory = playerData.inventory || [];
+
+            const stacks = {};
+            inventory.forEach((item, idx) => {
+                const itemObj = typeof item === 'string' ? { name: item, type: 'misc' } : item;
+                const name = itemObj.name;
+                if (!stacks[name]) {
+                    stacks[name] = { ...itemObj, count: 1, originalIndices: [idx] };
+                } else {
+                    stacks[name].count++;
+                    stacks[name].originalIndices.push(idx);
+                }
             });
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="empty-msg">No ${currentCategory} detected in vessel</div>`;
-                return;
+            const filteredStacks = Object.values(stacks).filter(item => {
+                const isArcane = (item.type === 'manuscript' || item.type === 'spell' || arcaneList.includes(item.name));
+                return currentCategory === 'arcane' ? isArcane : !isArcane;
+            });
+
+            if (filteredStacks.length === 0) {
+                container.innerHTML = `<div style="color:#222; font-size:0.6rem; text-align:center; margin-top:20px; letter-spacing:1px;">EMPTY</div>`;
+            } else {
+                filteredStacks.forEach(item => {
+                    let itemElement = item.element;
+                    if (!itemElement) {
+                        const nameLower = item.name.toLowerCase();
+                        for (const [keyword, element] of Object.entries(spellElementMap)) {
+                            if (nameLower.includes(keyword)) { itemElement = element; break; }
+                        }
+                    }
+
+                    const color = elementColors[itemElement] || "#555";
+                    const icon = item.icon || iconMap[item.name] || '📦';
+                    const isArcane = (item.type === 'manuscript' || item.type === 'spell' || arcaneList.includes(item.name));
+                    const isConsumable = item.type === 'potion' || item.name.toLowerCase().includes('potion') || item.name.toLowerCase().includes('tonic') || item.name.toLowerCase().includes('core');
+                    const countBadge = item.count > 1 ? `<span class="item-count" style="color:${color}">x${item.count}</span>` : '';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'item-card';
+                    card.style.borderColor = `${color}44`;
+                    
+                    let actionBtn = isConsumable ? `<button class="use-btn" style="color:${color}; border-color:${color}88" onclick="window.triggerUse('${item.name}', ${item.originalIndices[0]})">Use</button>` : 
+                                    (isArcane ? `<button class="use-btn" style="color:${color}; border-color:${color}88" onclick="window.openEquipMenu('${item.name}')">Equip</button>` : '');
+                    
+                    card.innerHTML = `
+                        <div class="item-icon" style="color:${color}; border-color:${color}66">${icon}</div>
+                        <div class="item-details">
+                            <span class="item-name" style="color:${color}">${item.name}${countBadge}</span>
+                            <span class="item-type">${item.type || (isArcane ? 'Manuscript' : 'Gear')}</span>
+                        </div>
+                        ${actionBtn}
+                    `;
+                    container.appendChild(card);
+                });
             }
-
-            filtered.forEach(itemName => {
-                const icon = spellIcons[itemName] || gearIcons[itemName] || '📦';
-                const type = spellIcons[itemName] ? 'Manuscript' : 'Equipment';
-                
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.innerHTML = `
-                    <div class="item-icon">${icon}</div>
-                    <div class="item-details">
-                        <span class="item-name">${itemName}</span>
-                        <span class="item-type">${type}</span>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            document.getElementById('invWeight').innerText = `${items.length}/25`;
+            document.getElementById('invWeight').innerText = `${inventory.length}/25`;
         }
-
-        // Tab Switching
-        document.querySelectorAll('.inv-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.inv-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentCategory = tab.getAttribute('data-cat');
-                if (playerData) renderInventory();
-            });
-        });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                userId = user.uid;
                 await initSecurity(db, auth, user);
                 onSnapshot(doc(db, "players", user.uid), (snap) => {
                     if (snap.exists()) {
                         playerData = snap.data();
-                        document.getElementById('pGold').innerText = playerData.gold;
-                        document.getElementById('bodyTheme').className = `theme-${playerData.element}`;
+                        document.getElementById('pGold').innerText = playerData.gold || 0;
+                        document.getElementById('bodyTheme').className = `theme-${playerData.element || 'Soul'}`;
+                        updateVitalsUI(); 
                         renderInventory();
+                        if (menuEl.classList.contains('active')) renderSlots();
                     }
                 });
-            } else {
-                window.location.href = "index.html";
-            }
+            } else { window.location.href = "index.html"; }
         });
     </script>
 </body>

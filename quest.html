@@ -2,19 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Bounty Board - Sovereigns of Ruin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quest Log - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; font-family: sans-serif; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: sans-serif; }
         
-        .game-container { 
-            width: 400px; height: 100vh; background: #000; 
-            display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;
-            border-left: 1px solid #111; border-right: 1px solid #111;
+        .game-window {
+            width: 400px;
+            height: 100dvh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #111;
+            border-right: 1px solid #111;
+            position: relative;
         }
 
-        /* Reusing your Element Themes */
+        /* THEMES */
         .theme-Fire { --accent: #ff4444; }
         .theme-Water { --accent: #44aaff; }
         .theme-Wind { --accent: #62ffe1; }
@@ -22,105 +27,179 @@
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
 
-        /* Navigation */
-        .back-nav { 
-            font-size: 0.65rem; 
-            color: #444; 
-            cursor: pointer; 
-            margin-bottom: 10px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            transition: 0.2s;
+        /* HEADER */
+        .header {
+            padding: 20px 15px;
+            border-bottom: 1px solid #111;
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            color: #555;
+            text-decoration: none;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            transition: color 0.3s ease;
             display: inline-block;
+            margin-bottom: 15px;
         }
-        .back-nav:hover { color: var(--accent); }
+        .back-btn:hover { color: var(--accent); }
 
-        .header { padding: 10px 0; border-bottom: 2px solid var(--accent); margin-bottom: 15px; }
-        .header h1 { font-size: 1rem; letter-spacing: 4px; color: var(--accent); margin: 0; text-transform: uppercase; }
-        .header p { font-size: 0.6rem; color: #555; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .header-titles { text-align: center; }
+        .header-titles h1 {
+            color: #eee;
+            font-size: 1.1rem;
+            letter-spacing: 5px;
+            margin: 0;
+            text-transform: uppercase;
+        }
 
-        .quest-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 5px; }
-        .quest-list::-webkit-scrollbar { width: 3px; }
-        .quest-list::-webkit-scrollbar-thumb { background: var(--accent); }
-        
+        /* QUEST CATEGORY TABS */
+        .quest-tabs {
+            display: flex;
+            border-bottom: 1px solid #111;
+            background: #050505;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.6rem;
+            color: #444;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        .tab.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            background: rgba(255,255,255,0.02);
+        }
+        /* Special Event Tab Color */
+        .event-tab { color: #ff69b4; } 
+
+        /* QUEST LIST */
+        .quest-list {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         .quest-card {
-            background: #0a0a0a; border: 1px solid #1a1a1a; padding: 12px; border-radius: 6px;
-            transition: 0.2s; position: relative;
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            position: relative;
         }
-        .quest-card:hover { border-color: var(--accent); }
 
-        .quest-title { font-size: 0.8rem; color: var(--accent); font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
-        .quest-desc { font-size: 0.65rem; color: #777; line-height: 1.3; margin-bottom: 12px; }
-        
-        .quest-footer { 
-            display: flex; justify-content: space-between; align-items: center; 
-            border-top: 1px solid #1a1a1a; padding-top: 8px;
+        .quest-type-tag {
+            font-size: 0.5rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: block;
         }
-        .reward { font-size: 0.6rem; color: #555; letter-spacing: 1px; }
-        .reward span { color: #ffcc00; font-weight: bold; }
+
+        .quest-title {
+            color: #eee;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .quest-reward {
+            font-size: 0.65rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
 
         .accept-btn {
-            background: transparent; border: 1px solid var(--accent); color: var(--accent);
-            padding: 4px 10px; font-size: 0.6rem; cursor: pointer; text-transform: uppercase;
-            font-weight: bold; border-radius: 3px; transition: 0.2s;
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid #333;
+            color: #eee;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
         }
-        .accept-btn:hover:not(:disabled) { background: var(--accent); color: #000; }
-        .accept-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .accept-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #000;
+        }
+        .accept-btn:disabled { color: #222; border-color: #111; cursor: not-allowed; }
+
+        /* SEASONAL UI */
+        .event-locked {
+            text-align: center;
+            padding-top: 50px;
+        }
+        .event-locked h2 { color: #ff69b4; font-size: 0.9rem; letter-spacing: 2px; }
+        .event-locked p { color: #444; font-size: 0.6rem; margin-top: 10px; }
+
+        .plaza-footer {
+            padding: 15px;
+            border-top: 1px solid #111;
+            text-align: center;
+            color: #222;
+            font-size: 0.5rem;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body id="bodyTheme">
 
-    <div class="game-container">
-        <div class="back-nav" onclick="window.location.href='map.html'">← Return to Village</div>
-        
+    <div class="game-window">
         <div class="header">
-            <h1>The Bounty Board</h1>
-            <p>Need some loot? Find work below, Sovereign.</p>
+            <a href="map.html" class="back-btn">← Village Hub</a>
+            <div class="header-titles">
+                <h1>Quest Log</h1>
+            </div>
         </div>
 
-        <div class="quest-list" id="questList">
-            <div class="quest-card">
-                <div class="quest-title">Shadow Grove Scavenge</div>
-                <div class="quest-desc">Gather glowing moss from the outskirts. Low risk, steady pay.</div>
-                <div class="quest-footer">
-                    <div class="reward">REWARD: <span>15G</span> | <span>20XP</span></div>
-                    <button class="accept-btn" onclick="startQuest(this, 15, 20)">Accept</button>
-                </div>
-            </div>
+        <div class="quest-tabs">
+            <div class="tab active" onclick="filterQuests('main', event)">Main</div>
+            <div class="tab" onclick="filterQuests('side', event)">Side</div>
+            <div class="tab" onclick="filterQuests('daily', event)">Daily</div>
+            <div class="tab event-tab" onclick="filterQuests('event', event)">Event</div>
+        </div>
 
+        <div class="quest-list" id="questContainer">
             <div class="quest-card">
-                <div class="quest-title">Village Sentry</div>
-                <div class="quest-desc">Protect the gates from wandering husks. Requires focus and high Vitality.</div>
-                <div class="quest-footer">
-                    <div class="reward">REWARD: <span>40G</span> | <span>50XP</span></div>
-                    <button class="accept-btn" onclick="startQuest(this, 40, 50)">Accept</button>
-                </div>
+                <span class="quest-type-tag">Main Story</span>
+                <div class="quest-title">The First Ember</div>
+                <div class="quest-reward">Reward: 100 Gold, 50 XP</div>
+                <button class="accept-btn">Begin Quest</button>
             </div>
+        </div>
 
-            <div class="quest-card">
-                <div class="quest-title">Feral Beast Hunt</div>
-                <div class="quest-desc">A dangerous predator is stalking the Wildlands. Slay it for a heavy bounty.</div>
-                <div class="quest-footer">
-                    <div class="reward">REWARD: <span>100G</span> | <span>120XP</span></div>
-                    <button class="accept-btn" onclick="startQuest(this, 100, 120)">Accept</button>
-                </div>
-            </div>
+        <div class="plaza-footer">
+            Sovereigns of Ruin &copy; 2026
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
-            authDomain: "sovereigns-of-ruin.firebaseapp.com",
-            projectId: "sovereigns-of-ruin",
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
-            messagingSenderId: "1098142064736",
-            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+            projectId: "sovereigns-of-ruin", 
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
         const app = initializeApp(firebaseConfig);
@@ -129,34 +208,65 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const data = await initSecurity(db, auth, user);
-                if(data) {
-                    document.getElementById('bodyTheme').className = `theme-${data.element}`;
+                const profile = await initSecurity(db, auth, user);
+                if (profile) {
+                    document.getElementById('bodyTheme').className = `theme-${profile.element}`;
                 }
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        window.startQuest = async function(btn, goldReward, xpReward) {
-            if (!auth.currentUser) return;
+        window.filterQuests = (category, event) => {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const container = document.getElementById('questContainer');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth(); // 0 = Jan, 1 = Feb
 
-            btn.disabled = true;
-            btn.innerText = "...";
-
-            try {
-                const playerRef = doc(db, "players", auth.currentUser.uid);
-                await updateDoc(playerRef, {
-                    gold: increment(goldReward),
-                    xp: increment(xpReward)
-                });
-            } catch (e) {
-                console.error("Bounty failed:", e);
-                alert("The board flickers... quest connection lost.");
-                btn.disabled = false;
-                btn.innerText = "Accept";
-            } finally {
-                btn.innerText = "Claimed";
+            if (category === 'event') {
+                // Valentine's 2026 Logic: Feb 1st (1) to Feb 28th (1)
+                if (year === 2026 && month === 1) {
+                    // It is February 2026
+                    container.innerHTML = `
+                        <div class="quest-card" style="border-color: #ff69b4;">
+                            <span class="quest-type-tag" style="color: #ff69b4;">Valentine's Special</span>
+                            <div class="quest-title">Hearts of the Fallen</div>
+                            <div class="quest-reward">Reward: "Love-Struck" Title, 1 Soul Shard</div>
+                            <button class="accept-btn" style="border-color: #ff69b4; color: #ff69b4;">Accept Seasonal Quest</button>
+                        </div>
+                    `;
+                } else if (year === 2026 && month === 0) {
+                    // It is January 2026 (Locked)
+                    container.innerHTML = `
+                        <div class="event-locked">
+                            <h2>Festival of Hearts</h2>
+                            <p>Locked until 01/02/2026</p>
+                            <p style="color: #222; font-size: 0.5rem;">Prepare your element for the month of affection.</p>
+                        </div>
+                    `;
+                } else {
+                    // Event concluded or future year
+                    container.innerHTML = `
+                        <div class="event-locked">
+                            <p>There are no active Seasonal Events at this time.</p>
+                            <p style="color: #222; font-size: 0.5rem;">The next event returns in 2027.</p>
+                        </div>
+                    `;
+                }
+            } else {
+                // Default placeholders for Main/Side/Daily
+                container.innerHTML = `
+                    <div class="quest-card">
+                        <span class="quest-type-tag">${category} Quest</span>
+                        <div class="quest-title">Seeking the Ruin</div>
+                        <div class="quest-reward">Reward: 50 Gold</div>
+                        <button class="accept-btn">Accept</button>
+                    </div>
+                `;
             }
         };
     </script>

@@ -108,6 +108,16 @@
         let userUID = null;
         let isProcessing = false;
 
+        // Starter skill mapping based on chosen element
+        const starterSkills = {
+            "Fire": "Ember",
+            "Water": "Splash",
+            "Wind": "Gale",
+            "Earth": "Pebble Toss",
+            "Light": "Holy Glow",
+            "Shadow": "Soul Strike"
+        };
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userUID = user.uid;
@@ -147,14 +157,18 @@
             localStorage.setItem('currentSessionId', newSessionId);
 
             try {
-                // Binding the element and ensuring level 0 is locked in
+                // Initialize skills: index 0 is the starter skill, others are empty (null)
+                const initialSkills = [starterSkills[chosenElement], null, null, null];
+
                 await updateDoc(doc(db, "players", userUID), {
                     element: chosenElement,
                     activeSessionId: newSessionId,
-                    level: 0, // Explicitly starting as Level 0
+                    level: 0, 
                     trainingLevels: { maxHp: 0, maxMana: 0 },
                     shards: 0,
-                    gold: 0 
+                    gold: 0,
+                    skills: initialSkills,
+                    inventory: []
                 });
 
                 window.location.href = "map.html";

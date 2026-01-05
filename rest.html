@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Hollow Rest - Sovereigns of Ruin</title>
+    <style>
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
+        .scene { width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; display: flex; flex-direction: column; background: radial-gradient(circle at top, #0a0a10 0%, #000 100%); }
+        
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid #111; }
+        .title { letter-spacing: 5px; color: #5eead4; font-size: 1rem; margin: 0; }
+        
+        .status-area { padding: 30px 20px; display: flex; flex-direction: column; gap: 15px; }
+        .bar-label { font-size: 0.6rem; color: #555; letter-spacing: 2px; margin-bottom: 5px; display: block; }
+        .bar-wrap { width: 100%; height: 15px; background: #111; border: 1px solid #222; position: relative; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.5s ease; }
+        .hp-bg { background: #ff4444; }
+        .mp-bg { background: #22ccff; }
+        
+        .timer-display { text-align: center; margin: 40px 0; }
+        #countdown { font-size: 3rem; font-weight: 100; color: #333; font-family: monospace; }
+        .status-msg { font-size: 0.7rem; color: #888; margin-top: 10px; font-style: italic; }
+
+        .actions { padding: 20px; display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-bottom: 40px; }
+        .btn { background: #0a0a0a; border: 1px solid #333; color: #eee; padding: 18px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+        .btn-heal { border-color: #5eead4; color: #5eead4; }
+        .btn-gold { border-color: #fbbf24; color: #fbbf24; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .nav-link { text-align: center; color: #444; text-decoration: none; font-size: 0.6rem; margin-top: 10px; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <div class="scene">
+        <div class="header">
+            <h1 class="title">THE HOLLOW REST</h1>
+        </div>
+
+        <div class="status-area">
+            <div>
+                <span class="bar-label">VITALITY</span>
+                <div class="bar-wrap"><div id="hpFill" class="bar-fill hp-bg"></div></div>
+            </div>
+            <div>
+                <span class="bar-label">RESERVE</span>
+                <div class="bar-wrap"><div id="mpFill" class="bar-fill mp-bg"></div></div>
+            </div>
+        </div>
+
+        <div class="timer-display">
+            <div id="countdown">00:00</div>
+            <div id="statusMsg" class="status-msg">Your essence is fractured.</div>
+        </div>
+
+        <div class="actions">
+            <button id="restBtn" class="btn btn-heal" onclick="toggleRest()">Begin Meditation</button>
+            <button id="buyBtn" class="btn btn-gold" onclick="instantHeal()">Instant Restoration (50 Gold)</button>
+            <a href="map.html" class="nav-link" id="exitLink" onclick="notifyBackground()">BACK TO WORLD MAP</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let pData = null;
+        let timer = null;
+        let secondsLeft = 60;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    pData = snap.data();
+                    updateUI();
+                    checkAutoStop();
+                });
+            } else { window.location.href = "index.html"; }
+        });
+
+        function updateUI() {
+            const hpPerc = (pData.stats.hp / pData.stats.maxHp) * 100;
+            const mpPerc = (pData.stats.mana / pData.stats.maxMana) * 100;
+            document.getElementById('hpFill').style.width = hpPerc + "%";
+            document.getElementById('mpFill').style.width = mpPerc + "%";
+            
+            const isFull = pData.stats.hp >= pData.stats.maxHp && pData.stats.mana >= pData.stats.maxMana;
+            document.getElementById('restBtn').disabled = isFull;
+            document.getElementById('buyBtn').disabled = isFull;
+        }
+
+        window.toggleRest = async function() {
+            const isResting = !pData.isResting;
+            await updateDoc(doc(db, "players", auth.currentUser.uid), { isResting: isResting });
+            
+            if (isResting) {
+                document.getElementById('restBtn').innerText = "Stop Meditation";
+                startCountdown();
+            } else {
+                document.getElementById('restBtn').innerText = "Begin Meditation";
+                clearInterval(timer);
+                document.getElementById('countdown').innerText = "00:00";
+            }
+        };
+
+        function startCountdown() {
+            clearInterval(timer);
+            secondsLeft = 60;
+            timer = setInterval(async () => {
+                secondsLeft--;
+                let displaySec = secondsLeft < 10 ? "0" + secondsLeft : secondsLeft;
+                document.getElementById('countdown').innerText = `00:${displaySec}`;
+
+                if (secondsLeft <= 0) {
+                    await applyTick();
+                    secondsLeft = 60;
+                }
+            }, 1000);
+        }
+
+        async function applyTick() {
+            let newHp = Math.min(pData.stats.maxHp, pData.stats.hp + (pData.stats.maxHp * 0.1));
+            let newMp = Math.min(pData.stats.maxMana, pData.stats.mana + (pData.stats.maxMana * 0.1));
+            
+            await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                "stats.hp": Math.floor(newHp),
+                "stats.mana": Math.floor(newMp)
+            });
+        }
+
+        window.instantHeal = async function() {
+            if (pData.gold < 50) return alert("Not enough gold.");
+            await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                "stats.hp": pData.stats.maxHp,
+                "stats.mana": pData.stats.maxMana,
+                gold: pData.gold - 50,
+                isResting: false
+            });
+            alert("Restoration complete.");
+        };
+
+        function checkAutoStop() {
+            if (pData.stats.hp >= pData.stats.maxHp && pData.stats.mana >= pData.stats.maxMana && pData.isResting) {
+                toggleRest();
+                document.getElementById('statusMsg').innerText = "You are fully restored.";
+            }
+        }
+
+        window.notifyBackground = function() {
+            if(pData.isResting) alert("Healing will continue in the background. You cannot battle until finished.");
+        };
+    </script>
+</body>
+</html>

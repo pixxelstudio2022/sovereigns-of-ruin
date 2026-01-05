@@ -66,6 +66,28 @@
         .room-title { color: #eee; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; }
         .flip-trigger { cursor: pointer; color: #44ff44; font-size: 1.2rem; }
 
+        /* RESTING BANNER */
+        #restBanner {
+            display: none;
+            background: linear-gradient(90deg, #440000, #880000, #440000);
+            color: #fff;
+            font-size: 0.6rem;
+            text-align: center;
+            padding: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 1px solid #ff000033;
+            animation: pulseBanner 2s infinite;
+        }
+
+        @keyframes pulseBanner {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; background: #aa0000; }
+            100% { opacity: 0.9; }
+        }
+
         /* GRID LOGIC */
         .map-grid {
             flex-grow: 1;
@@ -91,6 +113,13 @@
             cursor: pointer;
             box-sizing: border-box;
             width: 100%;
+        }
+
+        .boss-card.is-resting {
+            opacity: 0.3;
+            filter: grayscale(1) blur(0.5px);
+            cursor: not-allowed !important;
+            border-color: #222 !important;
         }
 
         .featured-card {
@@ -145,13 +174,17 @@
         <div class="card" id="mainCard">
             
             <div class="card-face">
+                <div id="restBanner" onclick="window.location.href='rest.html'">
+                    Healing active... Return to HOLLOW REST to stop
+                </div>
+
                 <div class="chat-header">
                     <a class="back-btn" onclick="window.location.href='map.html'">← Village</a>
                     <span class="room-title">WILDLANDS</span>
                     <div class="flip-trigger" onclick="flipPage()">→</div>
                 </div>
 
-                <div class="map-grid">
+                <div class="map-grid" id="mapGrid">
                     <button class="boss-card neutral-text featured-card" onclick="enterMap('threshold')">
                         <span class="region-name">Threshold of Souls</span>
                         <span class="region-desc">The neutral origin for all new vessels. Beyond the reach of the Lords.</span>
@@ -211,7 +244,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = {
@@ -226,13 +259,35 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let pData = null;
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const myProfile = await initSecurity(db, auth, user);
-                if (myProfile) {
-                    document.body.className = `theme-${myProfile.element}`;
-                    generateChaosLords();
-                }
+                await initSecurity(db, auth, user);
+
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    pData = snap.data();
+                    if (!pData) return;
+
+                    document.body.className = `theme-${pData.element}`;
+                    
+                    // HANDLE RESTING UI STATE
+                    const cards = document.querySelectorAll('.boss-card');
+                    const banner = document.getElementById('restBanner');
+
+                    if (pData.isResting) {
+                        banner.style.display = 'block';
+                        cards.forEach(c => c.classList.add('is-resting'));
+                    } else {
+                        banner.style.display = 'none';
+                        cards.forEach(c => c.classList.remove('is-resting'));
+                    }
+
+                    if(document.getElementById('bossList').innerHTML === "") {
+                        generateChaosLords();
+                    }
+                });
+
             } else { window.location.href = "index.html"; }
         });
 
@@ -291,6 +346,12 @@
         }
 
         window.enterMap = (id) => {
+            if (pData && pData.isResting) {
+                alert("You cannot enter the fray while your vessel is mending. Return to the Hollow Rest to stop meditation.");
+                window.location.href = "rest.html";
+                return;
+            }
+
             let targetPage = "";
             let themeColor = "#62ffe1"; 
 

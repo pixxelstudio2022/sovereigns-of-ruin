@@ -2,25 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Village Hub - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Mobile-First 400px Container Fix */
-        body { 
-            background: #000; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            /* Fix: Allow vertical scrolling, prevent horizontal wiggle */
-            overflow-x: hidden; 
-            overflow-y: auto; 
+        /* SCROLL POWER-FIX */
+        html, body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            /* Force scrolling to be handled by the body */
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth inertia scroll for iOS */
+            height: auto !important; 
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
             font-family: sans-serif;
         }
 
         .game-container { 
             width: 400px; 
-            /* Fix: min-height allows the container to grow with the button list */
+            /* Allow container to expand vertically with content */
             min-height: 100vh; 
             background: #000; 
             display: flex; 
@@ -30,6 +37,7 @@
             position: relative; 
             border-left: 1px solid #111; 
             border-right: 1px solid #111;
+            overflow: visible !important;
         }
 
         /* Dynamic Element Themes */
@@ -64,8 +72,15 @@
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
-        /* Navigation List */
-        .map-locations { display: flex; flex-direction: column; gap: 8px; padding-bottom: 20px; }
+        /* Navigation List - Fixed Overflow */
+        .map-locations { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding-bottom: 50px; /* Space for easier scrolling on mobile */
+            overflow: visible !important;
+        }
+
         .loc-btn {
             background: #0a0a0a; border: 1px solid #1a1a1a; color: #eee;
             padding: 12px; border-radius: 6px; cursor: pointer; text-align: left;
@@ -76,7 +91,16 @@
         .loc-desc { font-size: 0.6rem; color: #666; margin-top: 3px; line-height: 1.3; }
 
         /* Modal & Logout */
-        .modal-overlay { position: fixed; inset: 0; background: #050505; display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; }
+        .modal-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: #050505; 
+            display: none; 
+            flex-direction: column; 
+            padding: 20px; 
+            z-index: 2000; 
+            box-sizing: border-box; 
+        }
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
         

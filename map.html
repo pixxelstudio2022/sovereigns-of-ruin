@@ -6,18 +6,14 @@
     <title>Village Hub - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ABSOLUTE SCROLL FIX */
+        /* LOCK SCROLLING COMPLETELY */
         html, body {
             background: #000;
             margin: 0;
             padding: 0;
             width: 100%;
-            overflow-x: hidden;
-            overflow-y: hidden; /* Lock the main body to prevent double scrollbars */
+            overflow: hidden; 
             height: 100dvh;
-        }
-
-        body {
             display: flex;
             justify-content: center;
             font-family: sans-serif;
@@ -35,21 +31,11 @@
             border-right: 1px solid #111;
         }
 
-        /* UI Line Elements */
-        .ui-header-line {
-            border-bottom: 1px solid #111;
-            padding: 10px 15px;
-            flex-shrink: 0;
-        }
+        /* UI LINE ELEMENTS */
+        .ui-header-line { border-bottom: 1px solid #111; padding: 10px 15px; flex-shrink: 0; }
+        .ui-footer-line { border-top: 1px solid #111; padding: 10px; text-align: center; flex-shrink: 0; background: #050505; }
 
-        .ui-footer-line {
-            border-top: 1px solid #111;
-            padding: 10px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        /* Dynamic Element Themes */
+        /* DYNAMIC THEMES */
         .theme-Fire { --accent: #ff4444; }
         .theme-Water { --accent: #44aaff; }
         .theme-Wind { --accent: #62ffe1; }
@@ -57,19 +43,13 @@
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
 
-        /* Top Bar */
+        /* TOP BAR */
         .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; align-items: center; }
         #realTimeClock { color: var(--accent); font-weight: bold; }
-        .top-right-icons { display: flex; gap: 10px; align-items: center; }
         .settings-btn { cursor: pointer; color: #888; font-size: 1.1rem; transition: 0.2s; }
         
-        /* HUD Header */
-        .stat-header { 
-            border-bottom: 2px solid var(--accent); 
-            padding: 0 15px 8px 15px; 
-            margin-bottom: 5px; 
-            flex-shrink: 0; 
-        }
+        /* HUD HEADER */
+        .stat-header { border-bottom: 2px solid var(--accent); padding: 0 15px 10px 15px; margin-bottom: 0; flex-shrink: 0; }
         .sov-name { font-size: 1rem; font-weight: bold; color: var(--accent); text-transform: uppercase; }
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
@@ -81,45 +61,57 @@
         .exp-fill { background: #ccff00; }
         .bar-label { position: absolute; top: 0; left: 4px; font-size: 0.5rem; line-height: 10px; font-weight: bold; color: white; text-transform: uppercase; text-shadow: 1px 1px #000; }
 
-        .currency-row { display: flex; gap: 12px; margin-top: 5px; font-size: 0.7rem; font-weight: bold; }
+        .currency-row { display: flex; gap: 12px; margin-top: 8px; font-size: 0.7rem; font-weight: bold; }
         .gold { color: #ffcc00; }
         .shards { color: #62ffe1; }
 
-        /* Navigation List - Contained inside Header/Footer */
+        /* COMPACT GRID NAVIGATION - NO SCROLL */
         .map-locations { 
             flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px; /* Reduced gap to fit everything perfectly */
-        }
-
-        /* Hide Scrollbar for clean look */
-        .map-locations::-webkit-scrollbar { width: 0px; }
-
-        .loc-btn {
-            width: 100%;
-            background: #0a0a0a; border: 1px solid #1a1a1a; color: #eee;
-            padding: 10px 12px; border-radius: 6px; cursor: pointer; text-align: left;
-            display: flex; flex-direction: column; transition: 0.2s;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            padding: 15px;
             box-sizing: border-box;
-            flex-shrink: 0;
         }
-        .loc-btn:hover { border-color: var(--accent); background: #111; }
-        .loc-title { font-weight: bold; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-        .loc-desc { font-size: 0.55rem; color: #666; margin-top: 2px; line-height: 1.2; }
 
-        /* Vessel Core Modal */
+        .loc-tile {
+            background: #0a0a0a; border: 1px solid #1a1a1a;
+            border-radius: 8px; cursor: pointer;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding: 10px;
+            transition: 0.2s; position: relative;
+        }
+
+        /* FIXED: Tile stays dark by default, only accent-glows on hover */
+        .loc-tile:hover, .loc-tile.special:hover { 
+            border-color: var(--accent); 
+            background: #111; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* Special tile only gets a unique icon glow, but same border behavior */
+        .loc-tile.special .tile-icon {
+            text-shadow: 0 0 5px rgba(255,255,255,0.1);
+        }
+        
+        .tile-icon { font-size: 1.4rem; margin-bottom: 5px; }
+        .tile-title { font-weight: bold; color: var(--accent); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tile-desc { font-size: 0.5rem; color: #444; line-height: 1.2; margin-top: 3px; }
+
+        /* QUICK NAV FOOTER */
+        .quick-nav {
+            display: flex; justify-content: space-around; padding: 12px;
+            background: #050505; border-top: 1px solid #111; flex-shrink: 0;
+        }
+        .nav-item { background: none; border: none; color: #444; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover { color: var(--accent); }
+
+        /* MODAL */
         .modal-overlay { 
-            position: fixed; 
-            inset: 0; 
-            background: #050505; 
-            display: none; 
-            flex-direction: column; 
-            padding: 20px; 
-            z-index: 2000; 
-            box-sizing: border-box; 
+            position: fixed; inset: 0; background: #050505; display: none; 
+            flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; 
         }
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
@@ -134,7 +126,7 @@
         #loading { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #5eead4; font-weight: bold; }
     </style>
 </head>
-<body id="bodyTheme" class="theme-Light">
+<body id="bodyTheme">
 
     <div id="loading">MANIFESTING REALM...</div>
 
@@ -166,7 +158,7 @@
             <div class="top-status">
                 <div id="realTimeClock">00:00:00</div>
                 <div class="top-right-icons">
-                    <div>PING: <span id="pingDisplay">--</span>ms</div>
+                    <div style="font-size: 0.5rem; letter-spacing: 1px;">MS: <span id="pingDisplay">--</span></div>
                     <div class="settings-btn" onclick="toggleModal()">⚙</div>
                 </div>
             </div>
@@ -187,42 +179,56 @@
         </div>
 
         <div class="map-locations">
-            <button class="loc-btn" onclick="window.location.href='wildlands.html'">
-                <span class="loc-title">The Wildlands</span>
-                <span class="loc-desc">Venture beyond the walls to hunt and scavenge.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='training.html'">
-                <span class="loc-title">Training Grounds</span>
-                <span class="loc-desc">Hone your physical vessel and augment core attributes.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='quest.html'">
-                <span class="loc-title">The Bounty Board</span>
-                <span class="loc-desc">Accept contracts to secure Gold and EXP for your journey.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='forge.html'">
-                <span class="loc-title">Village Forge</span>
-                <span class="loc-desc">Temper armaments in the ancient fires of the Old World.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='market.html'">
-                <span class="loc-title">Shadow Market</span>
-                <span class="loc-desc">Exchange Gold for vital tonics and rare artifacts.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='chat.html'">
-                <span class="loc-title">Global Echoes</span>
-                <span class="loc-desc">Commune with other survivors across the fractured realms.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='minigame.html'">
-                <span class="loc-title">The Elder's Riddle</span>
-                <span class="loc-desc">Answer South African lore to earn Gold while you mend.</span>
-            </button>
-            <button class="loc-btn" onclick="window.location.href='laws.html'">
-                <span class="loc-title">Laws of the Realm</span>
-                <span class="loc-desc" style="color:#ff4444; font-style:italic;">Violate the laws and watch your soul evaporate.</span>
-            </button>
+            <div class="loc-tile" onclick="window.location.href='wildlands.html'">
+                <span class="tile-icon">🌲</span>
+                <span class="tile-title">Wildlands</span>
+                <span class="tile-desc">Hunt & Scavenge</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='training.html'">
+                <span class="tile-icon">⚔️</span>
+                <span class="tile-title">Training</span>
+                <span class="tile-desc">Level Stats</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='market.html'">
+                <span class="tile-icon">⚖️</span>
+                <span class="tile-title">Market</span>
+                <span class="tile-desc">Buy Artifacts</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='quest.html'">
+                <span class="tile-icon">📜</span>
+                <span class="tile-title">Bounties</span>
+                <span class="tile-desc">Earn Rewards</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='forge.html'">
+                <span class="tile-icon">⚒️</span>
+                <span class="tile-title">The Forge</span>
+                <span class="tile-desc">Temper Gear</span>
+            </div>
+            <div class="loc-tile special" onclick="window.location.href='inventory.html'">
+                <span class="tile-icon">📦</span>
+                <span class="tile-title">Inventory</span>
+                <span class="tile-desc">Gear & Items</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='chat.html'">
+                <span class="tile-icon">💬</span>
+                <span class="tile-title">Echoes</span>
+                <span class="tile-desc">Global Chat</span>
+            </div>
+            <div class="loc-tile" onclick="window.location.href='minigame.html'">
+                <span class="tile-icon">🧩</span>
+                <span class="tile-title">Riddle</span>
+                <span class="tile-desc">Lore Quiz</span>
+            </div>
+        </div>
+
+        <div class="quick-nav">
+            <button class="nav-item" style="color:var(--accent)">🗺️ Map</button>
+            <button class="nav-item" onclick="window.location.href='inventory.html'">📦 Items</button>
+            <button class="nav-item" onclick="window.location.href='market.html'">💰 Shop</button>
         </div>
 
         <div class="ui-footer-line">
-            <span style="font-size: 0.5rem; color: #333; letter-spacing: 2px;">VILLAGE BOUNDARY</span>
+            <span style="font-size: 0.5rem; color: #222; letter-spacing: 2px;">VILLAGE BOUNDARY</span>
         </div>
     </div>
 
@@ -232,13 +238,13 @@
         import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
-            authDomain: "sovereigns-of-ruin.firebaseapp.com",
-            projectId: "sovereigns-of-ruin",
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app",
-            messagingSenderId: "1098142064736",
-            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305"
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+            projectId: "sovereigns-of-ruin", 
+            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
+            messagingSenderId: "1098142064736", 
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
         const app = initializeApp(firebaseConfig);
@@ -249,9 +255,7 @@
             if (user) {
                 initSecurity(db, auth, user);
                 setupLiveListener(user.uid);
-            } else {
-                window.location.href = "index.html";
-            }
+            } else { window.location.href = "index.html"; }
         });
 
         window.handleLogout = async function() {
@@ -277,9 +281,11 @@
                     document.getElementById('hpLabel').innerText = `HP: ${s.hp}/${s.maxHp}`;
                     document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
                     document.getElementById('manaLabel').innerText = `MANA: ${s.mana}/${s.maxMana}`;
+                    
                     const expReq = (data.level || 0) === 0 ? 50 : (data.level || 0) * 100;
                     document.getElementById('expBar').style.width = (Math.min((data.xp || 0) / expReq, 1) * 100) + "%";
                     document.getElementById('expLabel').innerText = `EXP: ${data.xp || 0}/${expReq}`;
+                    
                     document.getElementById('mod-name').innerText = data.name;
                     document.getElementById('mod-element').innerText = data.element;
                     document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
@@ -287,6 +293,7 @@
                     document.getElementById('mod-mana').innerText = s.maxMana;
                     document.getElementById('mod-gold').innerText = data.gold;
                     document.getElementById('mod-shards').innerText = data.shards || 0;
+                    
                     document.getElementById('bodyTheme').className = `theme-${data.element}`;
                     document.getElementById('loading').style.display = 'none';
                 }

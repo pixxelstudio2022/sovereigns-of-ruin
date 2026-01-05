@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vessel Inventory - Sovereigns of Ruin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; }
+        
+        .game-window {
+            width: 400px; height: 100dvh; background: #000;
+            display: flex; flex-direction: column;
+            border-left: 1px solid #111; border-right: 1px solid #111;
+            position: relative;
+        }
+
+        /* STATS HEADER */
+        .inv-header { padding: 15px; border-bottom: 1px solid #111; flex-shrink: 0; }
+        .back-btn { color: #555; text-decoration: none; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .vessel-summary { 
+            display: flex; justify-content: space-around; margin-top: 15px; padding: 10px;
+            background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid #111;
+        }
+        .summary-stat { text-align: center; }
+        .stat-label { display: block; font-size: 0.5rem; color: #444; text-transform: uppercase; }
+        .stat-value { color: var(--accent); font-weight: bold; font-size: 0.9rem; text-shadow: 0 0 5px var(--accent); }
+
+        /* CATEGORY NAV */
+        .category-bar { display: flex; justify-content: space-around; padding: 10px 0; border-bottom: 1px solid #111; background: #050505; }
+        .cat-icon { cursor: pointer; font-size: 1.1rem; opacity: 0.3; transition: 0.3s; padding: 5px 15px; }
+        .cat-icon.active { opacity: 1; border-bottom: 2px solid var(--accent); color: var(--accent); }
+
+        /* INVENTORY GRID */
+        .inventory-list {
+            flex-grow: 1; overflow-y: auto; padding: 15px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-content: start;
+        }
+        .inv-slot {
+            aspect-ratio: 1/1; background: #0a0a0a; border: 1px solid #1a1a1a;
+            border-radius: 6px; display: flex; justify-content: center; align-items: center;
+            font-size: 1.3rem; position: relative; cursor: pointer; transition: 0.2s;
+        }
+        .inv-slot:hover { border-color: var(--accent); background: #111; }
+        .inv-slot.empty { opacity: 0.1; cursor: default; }
+        .inv-slot.equipped-glow { border-color: var(--accent); box-shadow: inset 0 0 8px var(--accent); }
+        .equipped-tag { 
+            position: absolute; top: -2px; right: -2px; background: var(--accent); 
+            width: 8px; height: 8px; border-radius: 50%; border: 1px solid #000;
+        }
+
+        /* DETAIL DRAWER */
+        #itemDetail {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: #080808; border-top: 2px solid var(--accent);
+            padding: 20px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+        }
+        #itemDetail.open { transform: translateY(0); }
+        .detail-name { color: var(--accent); font-weight: bold; text-transform: uppercase; display: block; font-size: 1rem; }
+        .detail-desc { color: #666; font-size: 0.7rem; margin: 8px 0 15px 0; display: block; line-height: 1.4; }
+        .action-btn {
+            width: 100%; padding: 12px; background: transparent; 
+            border: 1px solid var(--accent); color: var(--accent);
+            text-transform: uppercase; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .action-btn:hover { background: var(--accent); color: #000; }
+        .action-btn:disabled { border-color: #333; color: #333; cursor: not-allowed; }
+
+        .footer { padding: 10px; text-align: center; border-top: 1px solid #111; background: #050505; }
+    </style>
+</head>
+<body id="bodyTheme">
+
+    <div class="game-window">
+        <div class="inv-header">
+            <a href="map.html" class="back-btn">← Back to Village</a>
+            <div class="vessel-summary">
+                <div class="summary-stat"><span class="stat-label">ATK</span><span class="stat-value" id="pAtk">0</span></div>
+                <div class="summary-stat"><span class="stat-label">DEF</span><span class="stat-value" id="pDef">0</span></div>
+                <div class="summary-stat"><span class="stat-label">AGI</span><span class="stat-value" id="pAgi">0</span></div>
+            </div>
+        </div>
+
+        <div class="category-bar">
+            <div class="cat-icon active" onclick="filterInv('all', this)">📦</div>
+            <div class="cat-icon" onclick="filterInv('helm', this)">🪖</div>
+            <div class="cat-icon" onclick="filterInv('armor', this)">🛡️</div>
+            <div class="cat-icon" onclick="filterInv('weapon', this)">⚔️</div>
+            <div class="cat-icon" onclick="filterInv('potion', this)">🧪</div>
+        </div>
+
+        <div class="inventory-list" id="invContainer"></div>
+
+        <div id="itemDetail">
+            <span id="detType" style="font-size: 0.5rem; color: #444; text-transform: uppercase; letter-spacing: 1px;">Category</span>
+            <span class="detail-name" id="detName">Item Name</span>
+            <span class="detail-desc" id="detStats">Stats description</span>
+            <div style="display: flex; gap: 10px;">
+                <button id="equipBtn" class="action-btn" style="flex: 2;">Equip</button>
+                <button class="action-btn" onclick="closeDetail()" style="flex: 1; border-color: #222; color: #444;">Back</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span style="color:#222; font-size:0.5rem; letter-spacing:2px;">VESSEL CARGO</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", storageBucket: "sovereigns-of-ruin.firebasestorage.app", messagingSenderId: "1098142064736", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userInventory = [];
+        let equipped = {};
+        let baseStats = { atk: 10, def: 10, agi: 10 };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const profile = await initSecurity(db, auth, user);
+                if (profile) {
+                    document.body.className = `theme-${profile.element}`;
+                    onSnapshot(doc(db, "players", user.uid), (snap) => {
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            userInventory = data.inventory || [];
+                            equipped = data.equipped || {};
+                            baseStats = data.baseStats || { atk: 10, def: 10, agi: 10 };
+                            
+                            calculateAndDisplayStats();
+                            renderInventory('all');
+                        }
+                    });
+                }
+            } else { window.location.href = "index.html"; }
+        });
+
+        function calculateAndDisplayStats() {
+            let totalAtk = baseStats.atk;
+            let totalDef = baseStats.def;
+            let totalAgi = baseStats.agi;
+
+            // Loop through equipped items and parse stat strings like "+5 Def"
+            Object.values(equipped).forEach(item => {
+                if (!item) return;
+                const bonus = parseInt(item.stats.match(/\d+/)) || 0;
+                if (item.stats.toLowerCase().includes('atk')) totalAtk += bonus;
+                if (item.stats.toLowerCase().includes('def')) totalDef += bonus;
+                if (item.stats.toLowerCase().includes('agi')) totalAgi += bonus;
+            });
+
+            document.getElementById('pAtk').innerText = totalAtk;
+            document.getElementById('pDef').innerText = totalDef;
+            document.getElementById('pAgi').innerText = totalAgi;
+        }
+
+        window.renderInventory = (category) => {
+            const container = document.getElementById('invContainer');
+            container.innerHTML = '';
+            const filtered = category === 'all' ? userInventory : userInventory.filter(i => i.type === category);
+
+            for (let i = 0; i < 20; i++) {
+                const item = filtered[i];
+                const slot = document.createElement('div');
+                const isEquipped = item && Object.values(equipped).some(e => e && e.acquiredAt === item.acquiredAt);
+                
+                slot.className = item ? 'inv-slot' : 'inv-slot empty';
+                if (isEquipped) slot.classList.add('equipped-glow');
+                
+                slot.innerHTML = item ? `${item.icon}${isEquipped ? '<div class="equipped-tag"></div>' : ''}` : '';
+                if (item) slot.onclick = () => showDetail(item, isEquipped);
+                container.appendChild(slot);
+            }
+        };
+
+        window.filterInv = (type, el) => {
+            document.querySelectorAll('.cat-icon').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+            renderInventory(type);
+        };
+
+        window.showDetail = (item, isEquipped) => {
+            document.getElementById('detName').innerText = item.name;
+            document.getElementById('detStats').innerText = item.stats;
+            document.getElementById('detType').innerText = item.type;
+            
+            const btn = document.getElementById('equipBtn');
+            if (item.type === 'potion') {
+                btn.innerText = "Use Potion";
+                btn.disabled = false;
+                btn.onclick = () => usePotion(item);
+            } else {
+                btn.innerText = isEquipped ? "Currently Equipped" : "Equip Item";
+                btn.disabled = isEquipped;
+                btn.onclick = () => equipItem(item);
+            }
+            document.getElementById('itemDetail').classList.add('open');
+        };
+
+        window.equipItem = async (item) => {
+            const user = auth.currentUser;
+            const playerRef = doc(db, "players", user.uid);
+            await updateDoc(playerRef, { [`equipped.${item.type}`]: item });
+            closeDetail();
+        };
+
+        window.usePotion = (item) => {
+            alert(`Used ${item.name}! Vitality restored.`);
+            // Future logic: Remove from inventory array and update HP/Mana
+            closeDetail();
+        };
+
+        window.closeDetail = () => document.getElementById('itemDetail').classList.remove('open');
+    </script>
+</body>
+</html>

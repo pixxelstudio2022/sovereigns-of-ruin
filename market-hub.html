@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Market Plaza - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: sans-serif; }
+        :root { --accent: #62ffe1; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         .game-window {
             width: 400px;
@@ -21,112 +21,116 @@
 
         /* THEMES */
         .theme-Fire { --accent: #ff4444; }
-        .theme-Water { --accent: #44aaff; }
-        .theme-Wind { --accent: #62ffe1; }
-        .theme-Earth { --accent: #aa7744; }
-        .theme-Light { --accent: #ffffcc; }
-        .theme-Shadow { --accent: #bb66ff; }
+        .theme-Water { --accent: #22ccff; }
+        .theme-Wind { --accent: #a8ff62; }
+        .theme-Earth { --accent: #ffcc66; }
+        .theme-Soul { --accent: #62ffe1; }
+        .theme-Shadow { --accent: #bf66ff; }
 
         /* HEADER */
         .plaza-header {
             padding: 20px 15px;
             border-bottom: 1px solid #111;
             flex-shrink: 0;
+            background: #050505;
         }
 
         .back-btn {
             color: #555;
             text-decoration: none;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             font-weight: bold;
             transition: color 0.3s ease;
             display: inline-block;
             margin-bottom: 15px;
         }
         
-        /* THEME BASED HOVER */
-        .back-btn:hover { 
-            color: var(--accent); 
-        }
+        .back-btn:hover { color: var(--accent); }
 
         .header-titles { text-align: center; }
         .header-titles h1 {
-            color: #eee;
+            color: var(--accent);
             font-size: 1.1rem;
             letter-spacing: 5px;
             margin: 0;
             text-transform: uppercase;
         }
-        .header-titles p { color: #444; font-size: 0.6rem; letter-spacing: 2px; margin-top: 8px; }
+        .header-titles p { color: #444; font-size: 0.55rem; letter-spacing: 2px; margin-top: 6px; font-weight: bold; }
 
         /* CONTENT */
         .plaza-content {
             flex-grow: 1;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            justify-content: center;
+            gap: 12px;
+            overflow-y: auto;
         }
 
         .shop-card {
             background: #0a0a0a;
             border: 1px solid #1a1a1a;
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 10px;
+            padding: 16px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             text-decoration: none;
         }
 
         .shop-card:hover {
             border-color: var(--accent);
-            background: #111;
-            transform: scale(1.02);
-        }
-
-        .shard-shop-card:hover {
-            border-color: #bf00ff !important;
-            box-shadow: inset 0 0 15px rgba(191, 0, 255, 0.1);
+            background: #0d0d0d;
+            transform: translateX(5px);
         }
 
         .shop-icon {
-            font-size: 1.8rem;
-            width: 50px; height: 50px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 50%;
+            font-size: 1.4rem;
+            width: 45px; height: 45px;
+            background: #111;
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
         }
 
         .shop-details { flex-grow: 1; }
         .shop-name {
-            display: block; color: var(--accent);
-            font-weight: bold; font-size: 0.9rem;
+            display: block; color: #eee;
+            font-weight: bold; font-size: 0.75rem;
             text-transform: uppercase; letter-spacing: 1px;
         }
-        .shop-desc { display: block; color: #666; font-size: 0.7rem; margin-top: 4px; line-height: 1.3; }
+        .shop-desc { display: block; color: #555; font-size: 0.6rem; margin-top: 3px; line-height: 1.4; }
 
         .plaza-footer {
-            padding: 20px;
+            padding: 15px;
             border-top: 1px solid #111;
             text-align: center;
             color: #222;
             font-size: 0.5rem;
             letter-spacing: 2px;
             text-transform: uppercase;
+            background: #050505;
+        }
+
+        /* Gold Display */
+        .currency-tag {
+            position: absolute; top: 20px; right: 15px;
+            font-size: 0.6rem; font-weight: bold; color: #ffcc66;
+            font-family: monospace;
         }
     </style>
 </head>
 <body id="bodyTheme">
 
     <div class="game-window">
+        <div class="currency-tag" id="pGold">0 GOLD</div>
+
         <div class="plaza-header">
-            <a href="map.html" class="back-btn">← Return to Village Hub</a>
+            <a href="map.html" class="back-btn">← Village Map</a>
             <div class="header-titles">
                 <h1>Market Plaza</h1>
                 <p>DISTRICT OF COMMERCE</p>
@@ -134,11 +138,19 @@
         </div>
 
         <div class="plaza-content">
+            <a href="inventory.html" class="shop-card">
+                <div class="shop-icon">🎒</div>
+                <div class="shop-details">
+                    <span class="shop-name">Inventory</span>
+                    <span class="shop-desc">Equip gear, bind arcane spells, and manage your weight.</span>
+                </div>
+            </a>
+
             <a href="armory.html" class="shop-card">
                 <div class="shop-icon">⚔️</div>
                 <div class="shop-details">
-                    <span class="shop-name">The Iron Exchange</span>
-                    <span class="shop-desc">Equip yourself with steel, leather, and restorative tonics.</span>
+                    <span class="shop-name">The Armory</span>
+                    <span class="shop-desc">Purchase standard weapons, armor, and vitality potions.</span>
                 </div>
             </a>
 
@@ -150,11 +162,19 @@
                 </div>
             </a>
 
-            <a href="shard_shop.html" class="shop-card shard-shop-card">
+            <a href="shard_shop.html" class="shop-card">
                 <div class="shop-icon">🔮</div>
                 <div class="shop-details">
-                    <span class="shop-name" style="color: #bf00ff;">Void Exchange</span>
-                    <span class="shop-desc">Trade your Boss Shards for Legendary Sovereigns gear.</span>
+                    <span class="shop-name" style="color: #bf66ff;">Void Exchange</span>
+                    <span class="shop-desc">Trade Shards for Legendary gear from the Ruined Lords.</span>
+                </div>
+            </a>
+
+            <a href="forge.html" class="shop-card">
+                <div class="shop-icon">⚒️</div>
+                <div class="shop-details">
+                    <span class="shop-name">The Forge</span>
+                    <span class="shop-desc">Refine your equipment to increase Power and Resilience.</span>
                 </div>
             </a>
         </div>
@@ -174,7 +194,6 @@
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
             authDomain: "sovereigns-of-ruin.firebaseapp.com", 
             projectId: "sovereigns-of-ruin", 
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
             appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
@@ -184,10 +203,14 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const profile = await initSecurity(db, auth, user);
-                if (profile) {
-                    document.getElementById('bodyTheme').className = `theme-${profile.element}`;
-                }
+                await initSecurity(db, auth, user);
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        document.getElementById('bodyTheme').className = `theme-${data.element || 'Soul'}`;
+                        document.getElementById('pGold').innerText = `${data.gold || 0} GOLD`;
+                    }
+                });
             } else {
                 window.location.href = "index.html";
             }

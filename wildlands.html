@@ -94,7 +94,7 @@
             padding: 12px;
             display: grid;
             grid-template-columns: 1fr 1fr; 
-            grid-template-rows: 1.2fr repeat(3, 1fr) 1.5fr; 
+            grid-template-rows: auto repeat(3, 1fr) auto; 
             gap: 10px;
             overflow-y: auto;
         }
@@ -119,7 +119,7 @@
             opacity: 0.3;
             filter: grayscale(1) blur(0.5px);
             cursor: not-allowed !important;
-            border-color: #222 !important;
+            pointer-events: none;
         }
 
         .featured-card {
@@ -146,7 +146,7 @@
 
         .map-list {
             flex-grow: 1;
-            overflow-y: auto !important;
+            overflow-y: auto;
             padding: 15px;
             display: flex;
             flex-direction: column;
@@ -172,7 +172,6 @@
 <body id="bodyTheme">
     <div class="scene">
         <div class="card" id="mainCard">
-            
             <div class="card-face">
                 <div id="restBanner" onclick="window.location.href='rest.html'">
                     Healing active... Return to HOLLOW REST to stop
@@ -187,45 +186,37 @@
                 <div class="map-grid" id="mapGrid">
                     <button class="boss-card neutral-text featured-card" onclick="enterMap('threshold')">
                         <span class="region-name">Threshold of Souls</span>
-                        <span class="region-desc">The neutral origin for all new vessels. Beyond the reach of the Lords.</span>
+                        <span class="region-desc">The neutral origin for all new vessels.</span>
                     </button>
-
                     <button class="boss-card fire-text standard-card" onclick="enterMap('fire')">
                         <span class="region-name">Cinder Scars</span>
                         <span class="region-desc">Scorched earth and molten fury.</span>
                     </button>
-
                     <button class="boss-card water-text standard-card" onclick="enterMap('water')">
                         <span class="region-name">Sunken Relic</span>
                         <span class="region-desc">Silent aquatic ruins.</span>
                     </button>
-
                     <button class="boss-card wind-text standard-card" onclick="enterMap('wind')">
                         <span class="region-name">Whisper Spires</span>
                         <span class="region-desc">Peaks where air is a blade.</span>
                     </button>
-
                     <button class="boss-card earth-text standard-card" onclick="enterMap('earth')">
                         <span class="region-name">Hollow Bastion</span>
                         <span class="region-desc">World-root fortresses.</span>
                     </button>
-
                     <button class="boss-card light-text standard-card" onclick="enterMap('light')">
                         <span class="region-name">Prism Horizon</span>
                         <span class="region-desc">Pure energy landscapes.</span>
                     </button>
-
                     <button class="boss-card shadow-text standard-card" onclick="enterMap('shadow')">
                         <span class="region-name">Umbra Expanse</span>
                         <span class="region-desc">The dark mirror of the world.</span>
                     </button>
-
                     <button class="boss-card blood-text featured-card" onclick="enterMap('blood')">
                         <span class="region-name">Cathedral of Ruin</span>
-                        <span class="region-desc">HIGH RISK: The epicenter of Chaos influence.</span>
+                        <span class="region-desc">HIGH RISK: Epicenter of Chaos.</span>
                     </button>
                 </div>
-
                 <div class="chat-footer"></div>
             </div>
 
@@ -244,7 +235,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
 
         const firebaseConfig = {
@@ -260,18 +251,33 @@
         const db = getFirestore(app);
 
         let pData = null;
+        let lordsGenerated = false;
+        let navigationActive = false;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 await initSecurity(db, auth, user);
+                const playerRef = doc(db, "players", user.uid);
 
-                onSnapshot(doc(db, "players", user.uid), (snap) => {
-                    pData = snap.data();
-                    if (!pData) return;
+                onSnapshot(playerRef, async (snap) => {
+                    const freshData = snap.data();
+                    if (!freshData) return;
 
-                    document.body.className = `theme-${pData.element}`;
+                    // --- ANTI-GHOST HEAL GUARD ---
+                    const fiftyPercent = freshData.stats.maxHp * 0.5;
+                    const fromDeath = sessionStorage.getItem('justDied') === 'true';
                     
-                    // HANDLE RESTING UI STATE
+                    if (fromDeath && freshData.stats.hp >= fiftyPercent && !freshData.isResting && freshData.stats.hp !== 1) {
+                        console.log("Ghost Heal Detected. Correcting...");
+                        await updateDoc(playerRef, { "stats.hp": 1 });
+                        sessionStorage.removeItem('justDied');
+                        return; 
+                    }
+
+                    pData = freshData;
+
+                    // UI Updates
+                    document.body.className = `theme-${pData.element}`;
                     const cards = document.querySelectorAll('.boss-card');
                     const banner = document.getElementById('restBanner');
 
@@ -283,8 +289,9 @@
                         cards.forEach(c => c.classList.remove('is-resting'));
                     }
 
-                    if(document.getElementById('bossList').innerHTML === "") {
+                    if(!lordsGenerated) {
                         generateChaosLords();
+                        lordsGenerated = true;
                     }
                 });
 
@@ -297,7 +304,6 @@
 
         function generateChaosLords() {
             const list = document.getElementById('bossList');
-            list.innerHTML = "";
             const lords = [
                 { name: "Escherion", desc: "The Mage of Inversion.", elem: "wind-text" },
                 { name: "Vath", desc: "The Dragonlord.", elem: "blood-text" }, 
@@ -321,10 +327,10 @@
                 { name: "Gojo The Limitless", desc: "The Strongest Sorcerer.", elem: "shadow-text" }
             ];
 
+            list.innerHTML = ""; // Clear before generating
             lords.forEach((lord, i) => {
                 const card = document.createElement('div');
                 card.className = `boss-card ${lord.elem}`;
-                card.style.flexShrink = "0";
                 card.style.marginBottom = "10px";
                 card.innerHTML = `
                     <span class="region-name">Lord ${i+1}: ${lord.name}</span>
@@ -333,75 +339,43 @@
                 `;
                 list.appendChild(card);
             });
-            
-            const drakath = document.createElement('div');
-            drakath.className = "boss-card void-text";
-            drakath.style.border = "2px solid #ff00ff";
-            drakath.innerHTML = `
-                <span class="region-name" style="color:#ff00ff">CHAMPION: DRAKATH</span>
-                <span class="region-desc" style="color:#ff4444">The end of all things.</span>
-                <button class="challenge-btn" disabled>Sovereign Ascension Only</button>
-            `;
-            list.appendChild(drakath);
         }
 
         window.enterMap = (id) => {
+            if (navigationActive) return;
             if (pData && pData.isResting) {
-                alert("You cannot enter the fray while your vessel is mending. Return to the Hollow Rest to stop meditation.");
+                alert("You cannot enter the fray while your vessel is mending.");
                 window.location.href = "rest.html";
                 return;
             }
 
-            let targetPage = "";
-            let themeColor = "#62ffe1"; 
+            const mapLookup = {
+                'threshold': { page: "threshold_of_souls-map.html", color: "#62ffe1" },
+                'fire': { page: "cinder_scars-map.html", color: "#ff4444" },
+                'water': { page: "sunken_relic-map.html", color: "#44aaff" },
+                'wind': { page: "whisper_spires-map.html", color: "#62ffe1" },
+                'earth': { page: "hollow_bastion-map.html", color: "#aa7744" },
+                'light': { page: "prism_horizon-map.html", color: "#ffffcc" },
+                'shadow': { page: "umbra_expanse-map.html", color: "#bb66ff" },
+                'blood': { page: "cathedral_of_ruin-map.html", color: "#ff0000" }
+            };
 
-            if (id === 'threshold') {
-                targetPage = "threshold_of_souls-map.html";
-                themeColor = "#62ffe1";
-            } else if (id === 'fire') {
-                targetPage = "cinder_scars-map.html";
-                themeColor = "#ff4444";
-            } else if (id === 'water') {
-                targetPage = "sunken_relic-map.html";
-                themeColor = "#44aaff";
-            } else if (id === 'wind') {
-                targetPage = "whisper_spires-map.html";
-                themeColor = "#62ffe1";
-            } else if (id === 'earth') {
-                targetPage = "hollow_bastion-map.html";
-                themeColor = "#aa7744";
-            } else if (id === 'light') {
-                targetPage = "prism_horizon-map.html";
-                themeColor = "#ffffcc";
-            } else if (id === 'shadow') {
-                targetPage = "umbra_expanse-map.html";
-                themeColor = "#bb66ff";
-            } else if (id === 'blood') {
-                targetPage = "cathedral_of_ruin-map.html";
-                themeColor = "#ff0000";
-            }
+            const target = mapLookup[id];
+            if (target) {
+                navigationActive = true;
+                // Prevent further clicks
+                document.body.style.pointerEvents = "none";
 
-            if (targetPage !== "") {
                 const overlay = document.createElement('div');
-                overlay.id = "travelOverlay";
-                overlay.style = `
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: #000; z-index: 9999; display: flex; flex-direction: column;
-                    align-items: center; justify-content: center; color: ${themeColor};
-                    font-family: 'Inter', sans-serif; letter-spacing: 5px; font-size: 0.8rem;
-                `;
+                overlay.style = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: ${target.color}; letter-spacing: 5px; font-size: 0.8rem; pointer-events: auto;`;
                 overlay.innerHTML = `
-                    <div class="spinner" style="border: 2px solid #111; border-top: 2px solid ${themeColor}; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+                    <div class="spinner" style="border: 2px solid #111; border-top: 2px solid ${target.color}; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
                     <span>TRAVERSING THE VOID...</span>
                     <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                 `;
                 document.body.appendChild(overlay);
 
-                setTimeout(() => {
-                    window.location.href = targetPage;
-                }, 5000);
-            } else {
-                alert("The way to the " + id.toUpperCase() + " region is currently blocked by Chaos energy.");
+                setTimeout(() => { window.location.href = target.page; }, 5000);
             }
         };
     </script>

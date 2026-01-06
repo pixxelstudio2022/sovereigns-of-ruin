@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Login - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        body { background: #000; margin: 0; font-family: 'Inter', sans-serif; }
         .login-card {
             background: #0a0a0a;
             border: 1px solid #1a1a1a;
             padding: 30px;
             border-radius: 8px;
             width: 320px;
-            margin: auto;
+            margin: 100px auto 0;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         input {
             width: 100%;
@@ -24,8 +26,9 @@
             color: #fff;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 0.9rem;
         }
-        input:focus { border-color: #62ffe1; outline: none; }
+        input:focus { border-color: #62ffe1; outline: none; box-shadow: 0 0 5px rgba(98, 255, 225, 0.2); }
         .primary-btn {
             width: 100%;
             padding: 15px;
@@ -37,14 +40,18 @@
             margin-top: 10px;
             cursor: pointer;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.2s;
         }
+        .primary-btn:hover { background: #4ee6c8; }
         .secondary-btn {
             background: none;
             border: 1px solid #333;
             color: #888;
             margin-top: 10px;
         }
-        .error-msg { color: #ff4444; font-size: 0.75rem; margin-top: 10px; display: none; }
+        .secondary-btn:hover { border-color: #62ffe1; color: #62ffe1; }
+        .error-msg { color: #ff4444; font-size: 0.75rem; margin-top: 10px; display: none; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -52,8 +59,8 @@
         <div class="login-card">
             <h2 style="letter-spacing: 4px; color: #62ffe1; margin-bottom: 20px;">SOVEREIGNS <br>OF RUIN</h2>
             
-            <input type="email" id="loginEmail" placeholder="Email Address">
-            <input type="password" id="loginPass" placeholder="Password">
+            <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email">
+            <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
 
             <div id="errorBox" class="error-msg"></div>
 
@@ -89,7 +96,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 1. Auto-Redirect Logic (Updated to handle Session IDs)
+        // 1. Auto-Redirect Logic
         onAuthStateChanged(auth, async (user) => {
             if (user && user.emailVerified) {
                 const playerRef = doc(db, "players", user.uid);
@@ -97,12 +104,13 @@
                 
                 if (snap.exists()) {
                     const data = snap.data();
-                    
-                    // If we have an active session in DB but none in Browser, 
-                    // we stay on login so the user can manually click 'Enter' to refresh it.
                     const localSid = localStorage.getItem('currentSessionId');
+                    
+                    // Only auto-redirect if the browser session matches the DB session
                     if (data.activeSessionId === localSid) {
-                        window.location.href = data.element ? "map.html" : "selection.html";
+                        // Check if player has already finished selection (element or origin)
+                        const hasFinishedSetup = data.element || data.origin;
+                        window.location.href = hasFinishedSetup ? "map.html" : "selection.html";
                     }
                 }
             }
@@ -110,47 +118,67 @@
 
         // 2. Login Handler
         document.getElementById('btnLogin').onclick = async () => {
-            const email = document.getElementById('loginEmail').value;
+            const email = document.getElementById('loginEmail').value.trim();
             const pass = document.getElementById('loginPass').value;
             const errBox = document.getElementById('errorBox');
 
+            if (!email || !pass) {
+                errBox.innerText = "Identification required.";
+                errBox.style.display = "block";
+                return;
+            }
+
             try {
+                // Set persistence to session (clears when tab closes)
                 await setPersistence(auth, browserSessionPersistence);
 
                 const userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
                 if (!user.emailVerified) {
-                    errBox.innerText = "Please verify your soul via email link.";
+                    errBox.innerText = "Soul unverified. Check your email for the link.";
                     errBox.style.display = "block";
                     await signOut(auth);
                     return;
                 }
 
-                // --- SESSION KEY GENERATION ---
-                // We create a unique ID for this specific login
+                // Create a unique Session ID for security monitoring
                 const newSessionId = "SID_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
                 localStorage.setItem('currentSessionId', newSessionId);
 
-                // --- FORCE UPDATE DATABASE ---
                 const playerRef = doc(db, "players", user.uid);
+                
+                // Record the login session
                 await updateDoc(playerRef, {
                     isOnline: true, 
                     lastActive: Date.now(),
-                    activeSessionId: newSessionId // Store the key in the DB
+                    activeSessionId: newSessionId
                 });
 
-                // Final check for element before redirect
+                // Check player status to decide destination
                 const snap = await getDoc(playerRef);
                 if (snap.exists()) {
                     const data = snap.data();
-                    window.location.href = data.element ? "map.html" : "selection.html";
+                    const hasFinishedSetup = data.element || data.origin;
+                    window.location.href = hasFinishedSetup ? "map.html" : "selection.html";
                 }
 
             } catch (error) {
-                errBox.innerText = "Invalid credentials or soul not found.";
+                console.error("Auth Error:", error.code);
                 errBox.style.display = "block";
-                console.error(error);
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errBox.innerText = "Invalid credentials or soul not found.";
+                        break;
+                    case 'auth/too-many-requests':
+                        errBox.innerText = "Access temporarily locked. Try again later.";
+                        break;
+                    default:
+                        errBox.innerText = "Connection to the Ruin failed.";
+                }
             }
         };
     </script>

@@ -2,23 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Awakening - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
     <style>
-        /* Mobile-First 400px Container */
-        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; color: #fff; }
+        /* Global Reset for 400px Mobile Constraint */
+        * { box-sizing: border-box; }
+
+        body { background: #000; margin: 0; display: flex; justify-content: center; overflow: hidden; color: #fff; font-family: 'Inter', sans-serif; }
+        
         .game-container { 
             width: 400px; height: 100vh; background: #000; 
-            display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; padding: 15px; 
             position: relative; border-left: 1px solid #111; border-right: 1px solid #111;
         }
 
         .selection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        
         .element-card {
             background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px;
             padding: 20px 10px; cursor: pointer; transition: 0.3s; text-align: center;
         }
+        
         .element-card:hover { border-color: var(--accent); transform: translateY(-3px); background: #111; }
         .element-card.selected { border-color: var(--accent); background: #111; box-shadow: 0 0 15px var(--accent); }
         
@@ -30,9 +34,11 @@
             background: #eee; color: #000; border: none; 
             font-weight: bold; border-radius: 4px; cursor: pointer;
             display: none; letter-spacing: 2px; text-transform: uppercase;
+            transition: opacity 0.2s;
         }
+        #confirmBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Preview colors for the selection screen */
+        /* Elemental Accent Colors */
         .Fire { --accent: #ff4444; }
         .Water { --accent: #44aaff; }
         .Wind { --accent: #62ffe1; }
@@ -58,7 +64,7 @@
             <h2 style="text-align: center; margin-top: 40px; letter-spacing: 4px;">THE AWAKENING</h2>
             <p style="font-size: 0.65rem; color: #555; text-align: center; margin-bottom: 30px; line-height: 1.6; padding: 0 20px;">
                 YOUR ESSENCE IS BEING BOUND TO THE VOID. <br>
-                <span style="color: #ff4444;">THIS CHOICE IS PERMANENT.</span>
+                <span style="color: #ff4444; font-weight: bold;">THIS CHOICE IS PERMANENT.</span>
             </p>
 
             <div class="selection-grid" id="mainGrid">
@@ -90,6 +96,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // --- 1. IMPORT THE LIBRARY ---
+        import { ITEM_LIBRARY } from "./items.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM",
@@ -108,14 +117,15 @@
         let userUID = null;
         let isProcessing = false;
 
-        // Starter skill mapping based on chosen element
-        const starterSkills = {
-            "Fire": "Ember",
-            "Water": "Splash",
-            "Wind": "Gale",
-            "Earth": "Pebble Toss",
-            "Light": "Holy Glow",
-            "Shadow": "Soul Strike"
+        // --- 2. MAP ELEMENTS TO LIBRARY IDs ---
+        // We use these IDs so the system can look up stats in items.js
+        const starterSkillIDs = {
+            "Fire": "start_fire", 
+            "Water": "start_water", 
+            "Wind": "start_wind",
+            "Earth": "start_earth", 
+            "Light": "start_light", 
+            "Shadow": "start_shadow"
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -124,7 +134,7 @@
                 const docRef = doc(db, "players", userUID);
                 const docSnap = await getDoc(docRef);
 
-                // Check if element is already chosen to prevent re-selection
+                // Permanent Check [cite: 2026-01-01]
                 if (docSnap.exists() && docSnap.data().element) {
                     window.location.href = "map.html";
                 } else {
@@ -157,24 +167,23 @@
             localStorage.setItem('currentSessionId', newSessionId);
 
             try {
-                // Initialize skills: index 0 is the starter skill, others are empty (null)
-                const initialSkills = [starterSkills[chosenElement], null, null, null];
+                // --- 3. GET THE SKILL ID FROM OUR MAP ---
+                const skillId = starterSkillIDs[chosenElement];
 
                 await updateDoc(doc(db, "players", userUID), {
                     element: chosenElement,
                     activeSessionId: newSessionId,
-                    level: 0, 
+                    // Now saving the ID instead of the Name
+                    skills: [skillId, null, null, null], 
                     trainingLevels: { maxHp: 0, maxMana: 0 },
-                    shards: 0,
-                    gold: 0,
-                    skills: initialSkills,
-                    inventory: []
+                    level: 1,
+                    gold: 100 // Giving them some starting gold to use at the Exchange
                 });
 
                 window.location.href = "map.html";
             } catch (error) {
                 console.error("Ritual failed:", error);
-                alert("The void rejected the binding. Check connection.");
+                alert("The void rejected the binding.");
                 isProcessing = false;
                 btn.disabled = false;
                 btn.innerText = "RETRY AWAKENING";

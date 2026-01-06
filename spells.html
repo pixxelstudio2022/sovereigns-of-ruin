@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Arcane Sanctum - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: sans-serif; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         .game-window {
             width: 400px;
@@ -58,6 +57,7 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
+        .spell-icon { font-size: 1.5rem; margin-right: 15px; }
         .spell-info { flex-grow: 1; }
         .spell-name { display: block; color: #eee; font-size: 0.8rem; font-weight: bold; }
         .spell-desc { display: block; color: #555; font-size: 0.55rem; margin-top: 4px; text-transform: uppercase; }
@@ -73,12 +73,12 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .buy-btn:hover { border-color: #ffcc00; background: #111; }
+        .buy-btn:hover:not(:disabled) { border-color: #ffcc00; background: #111; }
+        .buy-btn:disabled { opacity: 0.4; color: #444; cursor: not-allowed; border-color: #222; }
 
         .shop-footer { padding: 15px 20px; border-top: 1px solid #111; display: flex; justify-content: flex-start; align-items: center; background: #050505; }
         .gold-display { color: #ffcc00; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; }
 
-        /* THEMES */
         .theme-Fire { --accent: #ff4444; }
         .theme-Water { --accent: #44aaff; }
         .theme-Wind { --accent: #62ffe1; }
@@ -102,9 +102,9 @@
         <div class="element-tabs" id="tabContainer">
             <span class="tab active" data-element="Fire">🔥</span>
             <span class="tab" data-element="Water">💧</span>
-            <span class="tab" data-element="Wind">🌿</span>
-            <span class="tab" data-element="Earth">🪨</span>
-            <span class="tab" data-element="Light">☀️</span>
+            <span class="tab" data-element="Wind">💨</span>
+            <span class="tab" data-element="Earth">🌿</span>
+            <span class="tab" data-element="Light">✨</span>
             <span class="tab" data-element="Shadow">🌑</span>
         </div>
 
@@ -118,15 +118,14 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
+        import { ITEM_LIBRARY, getItemsByStore } from "./items.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
             authDomain: "sovereigns-of-ruin.firebaseapp.com", 
             projectId: "sovereigns-of-ruin", 
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
-            messagingSenderId: "1098142064736", 
             appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
@@ -134,58 +133,55 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Spell Icons mapping for Inventory consistency
-        const spellIcons = {
-            'Fireball': '🔥', 'Inferno Blast': '💥',
-            'Tidal Wave': '🌊', 'Frost Bite': '❄️',
-            'Gale Blade': '🌪️', 'Cyclone Step': '💨',
-            'Stone Skin': '🛡️', 'Quake': '🌋',
-            'Heal': '✨', 'Purge': '☀️',
-            'Void Bolt': '🔮', 'Soul Reap': '💀'
-        };
-
-        const spells = {
-            Fire: [
-                { id: 'f1', name: 'Fireball', cost: 300, desc: '20 Mana | Launch a sphere of flame.' },
-                { id: 'f2', name: 'Inferno Blast', cost: 1200, desc: '55 Mana | Eruption of high-temp mana.' }
-            ],
-            Water: [
-                { id: 'w1', name: 'Tidal Wave', cost: 400, desc: '25 Mana | Crushing wave of spirit water.' },
-                { id: 'w2', name: 'Frost Bite', cost: 900, desc: '40 Mana | Freeze blood flow in targets.' }
-            ],
-            Wind: [
-                { id: 'v1', name: 'Gale Blade', cost: 350, desc: '15 Mana | Razor sharp wind pressure.' },
-                { id: 'v2', name: 'Cyclone Step', cost: 1500, desc: '60 Mana | Teleport through air currents.' }
-            ],
-            Earth: [
-                { id: 'e1', name: 'Stone Skin', cost: 500, desc: '30 Mana | Harden skin like granite.' },
-                { id: 'e2', name: 'Quake', cost: 2000, desc: '80 Mana | Shatter the ground beneath.' }
-            ],
-            Light: [
-                { id: 'l1', name: 'Heal', cost: 600, desc: '35 Mana | Restore minor health wounds.' },
-                { id: 'l2', name: 'Purge', cost: 1800, desc: '70 Mana | Cleanse all status ailments.' }
-            ],
-            Shadow: [
-                { id: 's1', name: 'Void Bolt', cost: 700, desc: '40 Mana | Bolt of pure nothingness.' },
-                { id: 's2', name: 'Soul Reap', cost: 2500, desc: '100 Mana | Drain life from the fallen.' }
-            ]
-        };
-
         let currentElement = "Fire";
+        let playerData = null;
+        const ALL_SPELLS = getItemsByStore('arcane_sanctum');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await initSecurity(db, auth, user);
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    if (snap.exists()) {
+                        playerData = snap.data();
+                        document.getElementById('pGold').innerText = playerData.gold;
+                        document.getElementById('bodyTheme').className = `theme-${playerData.element}`;
+                        renderSpells(currentElement);
+                    }
+                });
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        // Check if spell is already in Skills OR Inventory
+        function isSpellOwned(spellId) {
+            if (!playerData) return false;
+            const inSkills = (playerData.skills || []).includes(spellId);
+            const inInventory = (playerData.inventory || []).some(item => item.id === spellId);
+            return inSkills || inInventory;
+        }
 
         function renderSpells(element) {
             const list = document.getElementById('spellList');
             list.innerHTML = '';
             
-            spells[element].forEach(spell => {
+            const filtered = ALL_SPELLS.filter(s => s.element === element);
+
+            filtered.forEach(spell => {
+                const owned = isSpellOwned(spell.id);
                 const card = document.createElement('div');
                 card.className = 'spell-card';
                 card.innerHTML = `
+                    <div class="spell-icon">${spell.emoji}</div>
                     <div class="spell-info">
                         <span class="spell-name">${spell.name}</span>
-                        <span class="spell-desc">${spell.desc}</span>
+                        <span class="spell-desc">${spell.manaCost} Mana | Power: ${spell.baseStat}</span>
                     </div>
-                    <button class="buy-btn" onclick="purchaseSpell('${spell.id}', ${spell.cost}, '${spell.name}', '${spell.desc}')">${spell.cost} G</button>
+                    <button class="buy-btn" 
+                        onclick="window.purchaseSpell('${spell.id}')" 
+                        ${owned ? 'disabled' : ''}>
+                        ${owned ? 'LEARNED' : spell.price + ' G'}
+                    </button>
                 `;
                 list.appendChild(card);
             });
@@ -200,52 +196,46 @@
             });
         });
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                await initSecurity(db, auth, user);
-                onSnapshot(doc(db, "players", user.uid), (snap) => {
-                    if (snap.exists()) {
-                        const data = snap.data();
-                        document.getElementById('pGold').innerText = data.gold;
-                        document.getElementById('bodyTheme').className = `theme-${data.element}`;
-                    }
-                });
-                renderSpells("Fire");
-            } else {
-                window.location.href = "index.html";
+        window.purchaseSpell = async (spellId) => {
+            const spell = ITEM_LIBRARY[spellId];
+            if (!playerData || !spell) return;
+
+            if (isSpellOwned(spellId)) {
+                alert("You already possess this knowledge.");
+                return;
             }
-        });
 
-        window.purchaseSpell = async (id, cost, name, desc) => {
-            const user = auth.currentUser;
-            const playerRef = doc(db, "players", user.uid);
-            const snap = await getDoc(playerRef);
-            const data = snap.data();
+            if (playerData.gold < spell.price) {
+                alert("The Sanctum requires more gold for this knowledge.");
+                return;
+            }
 
-            // Check if already owned (must check name inside objects now)
-            const inventory = data.inventory || [];
-            const isOwned = inventory.some(item => typeof item === 'object' && item.name === name);
+            const currentSkills = [...(playerData.skills || [])];
+            const emptySlotIndex = currentSkills.indexOf(null);
 
-            if (data.gold >= cost) {
-                if (isOwned) {
-                    alert("This manuscript is already in your possession.");
-                    return;
-                }
-                
+            if (emptySlotIndex === -1) {
+                alert("Your soul can only bind 4 active skills. Visit the Skill Manager to forget one.");
+                return;
+            }
+
+            currentSkills[emptySlotIndex] = spellId;
+
+            try {
+                const playerRef = doc(db, "players", auth.currentUser.uid);
                 await updateDoc(playerRef, {
-                    gold: data.gold - cost,
+                    gold: playerData.gold - spell.price,
+                    skills: currentSkills,
                     inventory: arrayUnion({
-                        itemId: id,
-                        name: name,
-                        type: 'manuscript', // Categorizes it for the 'Arcane' tab in inventory
-                        stats: desc.split('|')[0].trim(), // Grabs the "Mana" requirement
-                        icon: spellIcons[name] || '📜',
+                        id: spell.id,
+                        name: spell.name,
+                        type: 'manuscript',
+                        emoji: spell.emoji,
                         acquiredAt: new Date().toISOString()
                     })
                 });
-                alert(`Manuscript Acquired: ${name}`);
-            } else {
-                alert("Insufficient Gold!");
+                alert(`Knowledge Obtained: ${spell.name}`);
+            } catch (err) {
+                console.error("Binding failed:", err);
             }
         };
     </script>

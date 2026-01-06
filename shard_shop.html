@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Void Exchange - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
     <style>
         body { 
             background: #000; margin: 0; display: flex; justify-content: center; 
@@ -17,7 +16,6 @@
             border-left: 1px solid #301934; border-right: 1px solid #301934;
         }
 
-        /* HEADER & BACK BUTTON */
         .chat-header {
             padding: 20px 15px;
             display: flex;
@@ -34,7 +32,6 @@
             font-weight: bold;
             transition: color 0.3s ease;
         }
-        /* Fixed: Hover now turns theme purple for Shard Shop */
         .back-btn:hover { color: #bf00ff; }
 
         .room-title {
@@ -45,7 +42,6 @@
             font-weight: bold;
         }
 
-        /* Shard Balance Header */
         .currency-bar {
             background: rgba(0, 0, 0, 0.8); padding: 10px 20px;
             display: flex; justify-content: space-between; align-items: center;
@@ -59,9 +55,9 @@
             background: linear-gradient(135deg, #0a0a0a 0%, #1a0022 100%);
             border: 1px solid #4b0082; padding: 15px; border-radius: 8px;
             position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
         }
 
-        /* Animated border effect */
         .legendary-card::after {
             content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
             background: linear-gradient(90deg, transparent, #bf00ff, transparent);
@@ -69,8 +65,10 @@
         }
         @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
+        .item-header { display: flex; justify-content: space-between; align-items: center; }
+        .item-emoji { font-size: 1.5rem; }
         .item-name { color: #ffd700; font-weight: bold; font-size: 0.85rem; letter-spacing: 1px; }
-        .item-stats { color: #aaa; font-size: 0.65rem; margin: 5px 0; }
+        .item-stats { color: #aaa; font-size: 0.65rem; margin: 5px 0; font-style: italic; }
         
         .price-tag { 
             display: flex; align-items: center; gap: 5px; 
@@ -82,7 +80,7 @@
             background: rgba(191, 0, 255, 0.1); color: #bf00ff; font-weight: bold;
             text-transform: uppercase; cursor: pointer; transition: 0.3s;
         }
-        .buy-btn:disabled { border-color: #333; color: #444; cursor: not-allowed; background: rgba(0,0,0,0.5); }
+        .buy-btn:disabled { border-color: #222; color: #444; cursor: not-allowed; background: rgba(0,0,0,0.5); }
         .buy-btn:not(:disabled):hover { background: #bf00ff; color: #000; }
     </style>
 </head>
@@ -100,33 +98,20 @@
             <span class="shard-count" id="shardDisplay">0</span>
         </div>
 
-        <div class="item-grid" id="exchangeList">
-            <div class="legendary-card">
-                <div class="item-name">VOID-REAPER'S SCYTHE</div>
-                <div class="item-stats">+250 Attack | 10% Lifesteal</div>
-                <div class="price-tag">COST: 4 SHARDS</div>
-                <button class="buy-btn" id="btn_scythe" onclick="exchangeShard('scythe', 4)">Exchange Shards</button>
-            </div>
-            
-            <div class="legendary-card">
-                <div class="item-name">CROWN OF CHAOS</div>
-                <div class="item-stats">+500 HP | +50 Mana</div>
-                <div class="price-tag">COST: 6 SHARDS</div>
-                <button class="buy-btn" id="btn_crown" onclick="exchangeShard('crown', 6)">Exchange Shards</button>
-            </div>
-        </div>
+        <div class="item-grid" id="exchangeList"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, runTransaction, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initSecurity } from "./auth-guard.js";
+        import { ITEM_LIBRARY, getItemsByStore } from "./items.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
             authDomain: "sovereigns-of-ruin.firebaseapp.com", 
             projectId: "sovereigns-of-ruin", 
-            storageBucket: "sovereigns-of-ruin.firebasestorage.app", 
             appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
 
@@ -134,49 +119,101 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        let userShards = 0;
+        let pData = null;
+        const LEGENDARY_ITEMS = getItemsByStore('void_exchange');
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userRef = doc(db, "users", user.uid);
-                const snap = await getDoc(userRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    userShards = data.shards || 0;
-                    document.getElementById('shardDisplay').innerText = userShards;
-                    checkAffordability();
-                }
+                await initSecurity(db, auth, user);
+                
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    if (snap.exists()) {
+                        pData = snap.data();
+                        document.getElementById('shardDisplay').innerText = pData.shards || 0;
+                        renderExchangeList();
+                    }
+                });
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        function checkAffordability() {
-            document.getElementById('btn_scythe').disabled = userShards < 4;
-            document.getElementById('btn_crown').disabled = userShards < 6;
+        // Check if player already owns this unique legendary item
+        function isOwned(itemId) {
+            if (!pData || !pData.inventory) return false;
+            return pData.inventory.some(i => i.id === itemId);
         }
 
-        window.exchangeShard = async (itemId, cost) => {
-            if (userShards >= cost) {
-                const userRef = doc(db, "users", auth.currentUser.uid);
+        function renderExchangeList() {
+            const container = document.getElementById('exchangeList');
+            if (!pData) return;
+
+            container.innerHTML = LEGENDARY_ITEMS.map(item => {
+                const owned = isOwned(item.id);
+                const canAfford = pData.shards >= item.price;
                 
-                try {
-                    await updateDoc(userRef, {
-                        shards: increment(-cost),
-                        inventory: arrayUnion({ 
-                            id: itemId, 
-                            type: 'legendary', 
-                            equipped: false,
-                            dateAcquired: Date.now() 
+                let btnText = "Exchange Shards";
+                if (owned) btnText = "ACQUIRED";
+
+                return `
+                    <div class="legendary-card">
+                        <div class="item-header">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-emoji">${item.emoji}</span>
+                        </div>
+                        <div class="item-stats">+${item.baseStat} ${item.statType.toUpperCase()}</div>
+                        <div class="price-tag">COST: ${item.price} SHARDS</div>
+                        <button class="buy-btn" 
+                            onclick="window.exchangeShard('${item.id}')"
+                            ${(!canAfford || owned) ? 'disabled' : ''}>
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.exchangeShard = async (itemId) => {
+            const user = auth.currentUser;
+            const itemData = ITEM_LIBRARY[itemId];
+            if (!user || !itemData || !pData) return;
+
+            if (isOwned(itemId)) {
+                alert("The Void has already granted you this artifact.");
+                return;
+            }
+
+            const playerRef = doc(db, "players", user.uid);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const playerDoc = await transaction.get(playerRef);
+                    const currentShards = playerDoc.data().shards || 0;
+                    const inv = playerDoc.data().inventory || [];
+
+                    if (currentShards < itemData.price) throw "Insufficient Shards";
+                    if (inv.length >= 20) throw "Inventory Full";
+
+                    transaction.update(playerRef, {
+                        shards: currentShards - itemData.price,
+                        inventory: arrayUnion({
+                            id: itemData.id,
+                            name: itemData.name,
+                            type: itemData.type,
+                            statType: itemData.statType,
+                            [itemData.statType]: itemData.baseStat,
+                            emoji: itemData.emoji,
+                            uid: "lgnd_" + Math.random().toString(36).substr(2, 9),
+                            refineLevel: 0,
+                            rarity: 'legendary',
+                            acquiredAt: new Date().toISOString()
                         })
                     });
-
-                    alert("Transaction Complete! The legendary item is yours.");
-                    window.location.reload();
-                } catch (error) {
-                    console.error("Error exchanging shards:", error);
-                    alert("The Void refuses the trade. Try again.");
-                }
+                });
+                alert("The Void grants you its power.");
+            } catch (error) {
+                console.error("Exchange failed:", error);
+                alert(error);
             }
         };
     </script>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Soul Forge - Sovereigns of Ruin</title>
+    <style>
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
+        .scene { width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; display: flex; flex-direction: column; background: #000; transition: filter 0.3s; }
+        
+        /* Hammer Strike Animation */
+        .shake { animation: strike 0.15s ease-in-out infinite; }
+        @keyframes strike {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(3px) scale(1.01); }
+            100% { transform: translateY(0); }
+        }
+
+        .forge-header { padding: 15px; border-bottom: 1px solid #221100; display: flex; justify-content: space-between; align-items: center; background: #050505; }
+        .back-btn { color: #ff8800; text-decoration: none; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; }
+        .currency { color: #ccff00; font-family: monospace; font-size: 0.8rem; font-weight: bold; }
+        
+        .forge-banner { height: 120px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #221100 0%, #000 100%); border-bottom: 1px solid #1a0f00; }
+        .forge-banner h1 { margin: 0; font-size: 1.1rem; letter-spacing: 4px; color: #ff8800; text-shadow: 0 0 10px #ff4400; text-transform: uppercase; }
+        
+        #pContainer { width: 70%; height: 4px; background: #111; margin-top: 15px; display: none; overflow: hidden; border-radius: 2px; border: 1px solid #331100; }
+        #pBar { width: 0%; height: 100%; background: #ff8800; transition: width 3s linear; box-shadow: 0 0 15px #ff8800; }
+
+        .inventory-list { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .item-card { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 15px; }
+        
+        .item-icon { font-size: 1.6rem; background: #111; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; }
+        .item-info { flex: 1; }
+        .item-name { font-size: 0.75rem; font-weight: bold; color: #fff; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+        .stat-main { font-size: 0.65rem; color: #5eead4; font-family: monospace; }
+        .stat-next { font-size: 0.6rem; color: #777; margin-top: 2px; }
+        .lvl-tag { font-size: 0.55rem; color: #ff8800; font-weight: bold; margin-top: 6px; display: block; letter-spacing: 1px; }
+
+        .refine-btn { background: #1a0f00; border: 1px solid #ff8800; color: #ff8800; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 0.65rem; font-weight: 900; text-align: center; }
+        .refine-btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
+
+        .log-display { height: 70px; padding: 0 20px; font-size: 0.6rem; color: #666; background: #050505; border-top: 1px solid #111; display: flex; align-items: center; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <div class="scene" id="mainScene">
+        <div class="forge-header">
+            <a href="map.html" class="back-btn">← VILLAGE MAP</a>
+            <div class="currency" id="goldDisplay">--- GOLD</div>
+        </div>
+
+        <div class="forge-banner">
+            <h1>THE SOUL FORGE</h1>
+            <div id="pContainer"><div id="pBar"></div></div>
+        </div>
+
+        <div class="inventory-list" id="forgeList"></div>
+        <div class="log-display" id="forgeLog">Select a weapon or armor to refine...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initSecurity } from "./auth-guard.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+            projectId: "sovereigns-of-ruin", 
+            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let pData = null;
+        let activeProcess = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await initSecurity(db, auth, user);
+                onSnapshot(doc(db, "players", user.uid), (snap) => {
+                    if (snap.exists()) {
+                        pData = snap.data();
+                        if (!activeProcess) renderForge();
+                    }
+                });
+            } else { window.location.href = "index.html"; }
+        });
+
+        function getSuccessRate(currentRefine) {
+            if (currentRefine < 10) return 100;
+            if (currentRefine < 30) return 90;
+            if (currentRefine < 60) return 75;
+            if (currentRefine < 85) return 50;
+            return 25;
+        }
+
+        function renderForge() {
+            document.getElementById('goldDisplay').innerText = `${pData.gold || 0} GOLD`;
+            const list = document.getElementById('forgeList');
+            list.innerHTML = "";
+
+            const pLevel = pData.level || 1;
+            const items = (pData.inventory || []).filter(i => 
+                ['weapon', 'armor', 'helm', 'legendary'].includes(i.type)
+            );
+
+            if (items.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#444; margin-top:50px; font-size:0.6rem; letter-spacing:2px;">INVENTORY VOID OF GEAR</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                const sType = item.statType || (item.type === 'weapon' ? 'atk' : 'def');
+                const curVal = item[sType] || 0;
+                const level = item.refineLevel || 0;
+                
+                const isMaxedForLevel = level >= pLevel;
+                const successRate = getSuccessRate(level);
+                const rateColor = successRate > 80 ? '#ccff00' : (successRate > 50 ? '#ff8800' : '#ff4444');
+                
+                const nextVal = Math.max(Math.floor(curVal * 1.15), curVal + 2); 
+                const cost = (level + 1) * 150;
+
+                const card = document.createElement('div');
+                card.className = "item-card";
+                card.innerHTML = `
+                    <div class="item-icon">${item.emoji || '⚔️'}</div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="stat-main">CURRENT: +${curVal} ${sType.toUpperCase()}</div>
+                        ${!isMaxedForLevel ? 
+                            `<div class="stat-next">SUCCESS: <b style="color:${rateColor}">${successRate}%</b></div>` : 
+                            `<div class="stat-next" style="color:#ff4444;">LIMIT REACHED (LVL ${pLevel})</div>`
+                        }
+                        <span class="lvl-tag">REFINEMENT +${level} / ${pLevel}</span>
+                    </div>
+                    <button class="refine-btn" 
+                        ${(pData.gold < cost || isMaxedForLevel) ? 'disabled' : ''} 
+                        onclick="window.runRefinement('${item.uid}', ${cost}, ${nextVal}, '${sType}', ${successRate})">
+                        ${isMaxedForLevel ? 'MAXED' : `REFINE<br>${cost}G`}
+                    </button>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        window.runRefinement = async (uid, cost, nextVal, statKey, successRate) => {
+            if (activeProcess) return;
+            activeProcess = true;
+
+            const roll = Math.random() * 100;
+            const isSuccess = roll <= successRate;
+
+            document.querySelectorAll('.refine-btn').forEach(b => b.disabled = true);
+            document.getElementById('pContainer').style.display = "block";
+            const pBar = document.getElementById('pBar');
+            pBar.style.width = "0%";
+            void pBar.offsetWidth; 
+            pBar.style.width = "100%";
+            
+            document.getElementById('mainScene').classList.add('shake');
+            setLog(`STRIKING THE ANVIL... (${successRate}% CHANCE)`);
+
+            await new Promise(r => setTimeout(r, 3000));
+
+            try {
+                const playerRef = doc(db, "players", auth.currentUser.uid);
+                const snap = await getDoc(playerRef);
+                const latest = snap.data();
+
+                if (latest.gold < cost) throw "GOLD DEPLETED";
+
+                let updatePayload = { gold: latest.gold - cost };
+
+                if (isSuccess) {
+                    updatePayload.inventory = latest.inventory.map(item => {
+                        if (item.uid === uid) {
+                            return {
+                                ...item,
+                                refineLevel: (item.refineLevel || 0) + 1,
+                                [statKey]: nextVal 
+                            };
+                        }
+                        return item;
+                    });
+                    setLog("SUCCESS! THE ITEM VIBRATES WITH NEW POWER.");
+                    document.getElementById('forgeLog').style.color = "#ccff00";
+                } else {
+                    setLog("FORGE FAILED! THE METAL REJECTED THE ESSENCE.");
+                    document.getElementById('forgeLog').style.color = "#ff4444";
+                }
+
+                await updateDoc(playerRef, updatePayload);
+                
+            } catch (e) {
+                setLog("ERROR: " + e);
+            }
+
+            activeProcess = false;
+            setTimeout(() => {
+                pBar.style.width = "0%";
+                document.getElementById('pContainer').style.display = "none";
+                document.getElementById('mainScene').classList.remove('shake');
+                renderForge();
+            }, 1000);
+        };
+
+        function setLog(m) {
+            const log = document.getElementById('forgeLog');
+            log.innerText = m;
+            log.style.color = "#ff8800";
+        }
+    </script>
+</body>
+</html>

@@ -42,8 +42,6 @@
         .theme-Earth { --accent: #aa7744; }
         .theme-Light { --accent: #ffffcc; }
         .theme-Shadow { --accent: #bb66ff; }
-        .theme-Soul { --accent: #62ffe1; }
-        .theme-Void { --accent: #bf66ff; }
 
         /* TOP BAR */
         .top-status { display: flex; justify-content: space-between; font-size: 0.65rem; color: #555; margin-bottom: 5px; align-items: center; }
@@ -56,7 +54,7 @@
         .sov-lvl { float: right; font-size: 0.75rem; color: var(--accent); border: 1px solid #222; padding: 1px 6px; border-radius: 4px; }
         
         .resource-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-        .bar-container { background: #111; height: 100%; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; height: 10px; }
+        .bar-container { background: #111; height: 10px; border-radius: 2px; width: 100%; position: relative; overflow: hidden; border: 1px solid #222; }
         .bar-fill { height: 100%; transition: width 0.5s ease; }
         .hp-fill { background: #ff4444; }
         .mana-fill { background: #44aaff; }
@@ -86,20 +84,7 @@
             transition: 0.2s; position: relative;
         }
 
-        .loc-tile:hover { 
-            border-color: var(--accent); 
-            background: #111; 
-        }
-
-        /* DANGER PULSE FOR REST */
-        .pulse-rest {
-            animation: rest-glow 2s infinite;
-        }
-        @keyframes rest-glow {
-            0% { border-color: #1a1a1a; box-shadow: 0 0 0px transparent; }
-            50% { border-color: #ff4444; box-shadow: inset 0 0 10px rgba(255,68,68,0.2); }
-            100% { border-color: #1a1a1a; box-shadow: 0 0 0px transparent; }
-        }
+        .loc-tile:hover { border-color: var(--accent); background: #111; }
 
         .tile-icon { font-size: 1.4rem; margin-bottom: 5px; }
         .tile-title { font-weight: bold; color: var(--accent); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -112,6 +97,23 @@
         }
         .nav-item { background: none; border: none; color: #444; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
         .nav-item:hover { color: var(--accent); }
+
+        /* CAMPFIRE OVERLAY */
+        #campfireOverlay {
+            display: none; position: absolute; bottom: 0; left: 0; width: 100%; height: 60%; 
+            background: rgba(5, 5, 5, 0.98); border-top: 2px solid #ff4444; z-index: 2500; 
+            flex-direction: column; align-items: center; padding: 30px 20px; box-sizing: border-box;
+            backdrop-filter: blur(15px); border-radius: 25px 25px 0 0;
+            box-shadow: 0 -10px 30px rgba(255, 68, 68, 0.2);
+        }
+        .camp-btn {
+            width: 100%; padding: 15px; margin-bottom: 12px; background: #111; border: 1px solid #333;
+            color: #eee; border-radius: 8px; cursor: pointer; font-family: inherit;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .camp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .camp-btn span:first-child { font-weight: bold; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .camp-val { font-size: 0.7rem; color: #888; }
 
         /* MODAL */
         .modal-overlay { 
@@ -129,6 +131,9 @@
         .stat-lbl { font-size: 0.5rem; color: #555; text-transform: uppercase; }
 
         #loading { position: fixed; inset: 0; background: #000; z-index: 3000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #5eead4; font-weight: bold; }
+
+        .fade-in { animation: fadeIn 0.3s ease-in forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body id="bodyTheme">
@@ -136,6 +141,26 @@
     <div id="loading">MANIFESTING REALM...</div>
 
     <div class="game-container">
+        <div id="campfireOverlay">
+            <div style="font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px #ff4444);">🔥</div>
+            <h2 style="color: #ff4444; margin: 0; letter-spacing: 2px; font-size: 1.2rem;">CRIMSON HEARTH</h2>
+            <p style="color: #555; font-size: 0.6rem; text-transform: uppercase; margin-bottom: 30px;">Restores your vessel's integrity</p>
+
+            <button class="camp-btn" id="btnFreeHeal" onclick="processHeal('free')" style="border-color: #5eead4;">
+                <span style="color: #5eead4;">Deep Rest</span>
+                <span class="camp-val" id="freeHealLabel">+10% HP & MP (FREE)</span>
+            </button>
+
+            <button class="camp-btn" id="btnPaidHeal" onclick="processHeal('paid')" style="border-color: #ffcc00;">
+                <span style="color: #ffcc00;">Greater Restoration</span>
+                <span class="camp-val" id="paidHealLabel">FULL RECOVER (200G)</span>
+            </button>
+
+            <button class="camp-btn" onclick="toggleCampfire(false)" style="margin-top: 20px; border: none; background: transparent;">
+                <span style="color: #444; width: 100%; text-align: center;">Leave the fire</span>
+            </button>
+        </div>
+
         <div id="profileModal" class="modal-overlay">
             <div class="modal-header">
                 <span class="modal-title">VESSEL CORE</span>
@@ -183,7 +208,7 @@
             </div>
         </div>
 
-        <div class="map-locations">
+        <div class="map-locations fade-in" id="grid-primary">
             <div class="loc-tile" onclick="window.location.href='wildlands.html'">
                 <span class="tile-icon">🌲</span>
                 <span class="tile-title">Wildlands</span>
@@ -199,41 +224,64 @@
                 <span class="tile-title">Market</span>
                 <span class="tile-desc">Visit District</span>
             </div>
-            <div class="loc-tile" onclick="window.location.href='quest.html'">
-                <span class="tile-icon">📜</span>
-                <span class="tile-title">Bounties</span>
-                <span class="tile-desc">Earn Rewards</span>
-            </div>
             <div class="loc-tile" onclick="window.location.href='forge.html'">
                 <span class="tile-icon">⚒️</span>
                 <span class="tile-title">The Forge</span>
                 <span class="tile-desc">Temper Gear</span>
-            </div>
-            <div id="restTile" class="loc-tile" onclick="window.location.href='rest.html'">
-                <span class="tile-icon">🧘</span>
-                <span class="tile-title">The Hollow</span>
-                <span class="tile-desc">Rest & Recover</span>
             </div>
             <div class="loc-tile special" onclick="window.location.href='inventory.html'">
                 <span class="tile-icon">📦</span>
                 <span class="tile-title">Inventory</span>
                 <span class="tile-desc">Gear & Items</span>
             </div>
+            <div class="loc-tile" onclick="window.location.href='quest.html'">
+                <span class="tile-icon">📜</span>
+                <span class="tile-title">Bounties</span>
+                <span class="tile-desc">Earn Rewards</span>
+            </div>
+            <div class="loc-tile" onclick="toggleCampfire(true)" style="border: 1px solid #ff4444; background: rgba(255,68,68,0.05);">
+                <span class="tile-icon">🔥</span>
+                <span class="tile-title" style="color:#ff4444">The Hearth</span>
+                <span class="tile-desc">Rest & Heal</span>
+            </div>
+            <div class="loc-tile" onclick="toggleMapPage()" style="border: 1px solid #39ff14; box-shadow: inset 0 0 10px rgba(57,255,20,0.1);">
+                <span class="tile-icon" style="color: #39ff14; filter: drop-shadow(0 0 5px #39ff14);">➔</span>
+                <span class="tile-title" style="color: #39ff14;">Shift View</span>
+                <span class="tile-desc" style="color: #22a40d;">Village Outskirts</span>
+            </div>
+        </div>
+
+        <div class="map-locations fade-in" id="grid-secondary" style="display: none;">
             <div class="loc-tile" onclick="window.location.href='chat.html'">
                 <span class="tile-icon">💬</span>
                 <span class="tile-title">Echoes</span>
                 <span class="tile-desc">Global Chat</span>
             </div>
+            <div class="loc-tile" onclick="window.location.href='minigame.html'">
+                <span class="tile-icon">🧩</span>
+                <span class="tile-title">Riddle</span>
+                <span class="tile-desc">Lore Quiz</span>
+            </div>
+            <div class="loc-tile" style="opacity: 0.3;"><span class="tile-icon">🔒</span><span class="tile-title">Locked</span></div>
+            <div class="loc-tile" style="opacity: 0.3;"><span class="tile-icon">🔒</span><span class="tile-title">Locked</span></div>
+            <div class="loc-tile" style="opacity: 0.3;"><span class="tile-icon">🔒</span><span class="tile-title">Locked</span></div>
+            <div class="loc-tile" style="opacity: 0.3;"><span class="tile-icon">🔒</span><span class="tile-title">Locked</span></div>
+            <div class="loc-tile" style="opacity: 0.3;"><span class="tile-icon">🔒</span><span class="tile-title">Locked</span></div>
+            <div class="loc-tile" onclick="toggleMapPage()" style="border: 1px solid #39ff14;">
+                <span class="tile-icon" style="color: #39ff14; transform: scaleX(-1);">➔</span>
+                <span class="tile-title" style="color: #39ff14;">Shift Back</span>
+                <span class="tile-desc" style="color: #22a40d;">Return to Hub</span>
+            </div>
         </div>
 
         <div class="quick-nav">
-            <button class="nav-item" style="color:var(--accent)">🗺️ Map</button>
-            <button class="nav-item" onclick="window.location.href='inventory.html'">📦 Items</button>
+            <button class="nav-item" onclick="window.location.href='chat.html'" style="color:var(--accent)">💬 Echoes</button>
+            <button class="nav-item" onclick="window.location.href='minigame.html'">🧩 Riddle</button>
             <button class="nav-item" onclick="window.location.href='market-hub.html'">💰 Shop</button>
         </div>
 
         <div class="ui-footer-line">
-            <span style="font-size: 0.5rem; color: #222; letter-spacing: 2px;">VILLAGE BOUNDARY</span>
+            <span id="pageIndicator" style="font-size: 0.5rem; color: #222; letter-spacing: 2px;">VILLAGE CORE</span>
         </div>
     </div>
 
@@ -256,12 +304,156 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        let pData = null;
+        let healCooldownActive = false;
+        let healTimerInterval = null;
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 initSecurity(db, auth, user);
                 setupLiveListener(user.uid);
             } else { window.location.href = "index.html"; }
         });
+
+        function setupLiveListener(uid) {
+            onSnapshot(doc(db, "players", uid), (snap) => {
+                if (snap.exists()) {
+                    pData = snap.data();
+                    const s = pData.stats;
+
+                    document.getElementById('pName').innerText = pData.name;
+                    document.getElementById('pLvl').innerText = pData.level || 0;
+                    document.getElementById('pGold').innerText = pData.gold;
+                    document.getElementById('pShards').innerText = pData.shards || 0;
+                    document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
+                    document.getElementById('hpLabel').innerText = `HP: ${Math.floor(s.hp)}/${s.maxHp}`;
+                    document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
+                    document.getElementById('manaLabel').innerText = `MANA: ${Math.floor(s.mana)}/${s.maxMana}`;
+                    
+                    const expReq = (pData.level || 0) === 0 ? 50 : (pData.level || 0) * 100;
+                    document.getElementById('expBar').style.width = (Math.min((pData.xp || 0) / expReq, 1) * 100) + "%";
+                    document.getElementById('expLabel').innerText = `EXP: ${pData.xp || 0}/${expReq}`;
+                    
+                    document.getElementById('mod-name').innerText = pData.name;
+                    document.getElementById('mod-element').innerText = pData.element;
+                    document.getElementById('pInitial').innerText = pData.name.charAt(0).toUpperCase();
+                    document.getElementById('mod-hp').innerText = s.maxHp;
+                    document.getElementById('mod-mana').innerText = s.maxMana;
+                    document.getElementById('mod-gold').innerText = pData.gold;
+                    document.getElementById('mod-shards').innerText = pData.shards || 0;
+                    
+                    document.getElementById('bodyTheme').className = `theme-${pData.element}`;
+                    document.getElementById('loading').style.display = 'none';
+
+                    // SHARED COOLDOWN CHECK
+                    const now = Date.now();
+                    const lastHeal = pData.lastCampfireHeal || 0;
+                    const cooldownMs = 30000;
+                    const diff = now - lastHeal;
+
+                    if (diff < cooldownMs) {
+                        const remaining = Math.ceil((cooldownMs - diff) / 1000);
+                        startHealCooldown(remaining);
+                    } else {
+                        if (!healTimerInterval) {
+                            resetHealButtons();
+                        }
+                    }
+                }
+            });
+        }
+
+        function resetHealButtons() {
+            const btnFree = document.getElementById('btnFreeHeal');
+            const labelFree = document.getElementById('freeHealLabel');
+            const btnPaid = document.getElementById('btnPaidHeal');
+            const labelPaid = document.getElementById('paidHealLabel');
+
+            if (btnFree) {
+                btnFree.disabled = false;
+                labelFree.innerText = "+10% HP & MP (FREE)";
+            }
+            if (btnPaid) {
+                btnPaid.disabled = false;
+                labelPaid.innerText = "FULL RECOVER (200G)";
+            }
+            healCooldownActive = false;
+        }
+
+        // --- CAMPFIRE LOGIC (UPDATED) ---
+        window.toggleCampfire = (show) => {
+            document.getElementById('campfireOverlay').style.display = show ? 'flex' : 'none';
+        };
+
+        window.processHeal = async (type) => {
+            if (!pData || !auth.currentUser || healCooldownActive) return;
+            
+            const now = Date.now();
+            const lastHeal = pData.lastCampfireHeal || 0;
+            if (now - lastHeal < 30000) return alert("The hearth is still gathering warmth.");
+
+            let updates = {};
+            let hpGain = 0;
+            let manaGain = 0;
+
+            if (type === 'free') {
+                hpGain = pData.stats.maxHp * 0.1;
+                manaGain = pData.stats.maxMana * 0.1;
+            } else if (type === 'paid') {
+                if (pData.gold < 200) return alert("You need 200 Gold for a Greater Restoration!");
+                hpGain = pData.stats.maxHp; // Full restore
+                manaGain = pData.stats.maxMana; // Full restore
+                updates["gold"] = pData.gold - 200;
+            }
+
+            updates["lastCampfireHeal"] = now; 
+            updates["stats.hp"] = Math.min(pData.stats.maxHp, Math.floor(pData.stats.hp + hpGain));
+            updates["stats.mana"] = Math.min(pData.stats.maxMana, Math.floor(pData.stats.mana + manaGain));
+            
+            try {
+                await updateDoc(doc(db, "players", auth.currentUser.uid), updates);
+            } catch(e) { console.error("Restoration failed", e); }
+        };
+
+        function startHealCooldown(seconds) {
+            if (healCooldownActive) return; 
+            healCooldownActive = true;
+            
+            const btnFree = document.getElementById('btnFreeHeal');
+            const labelFree = document.getElementById('freeHealLabel');
+            const btnPaid = document.getElementById('btnPaidHeal');
+            const labelPaid = document.getElementById('paidHealLabel');
+
+            if (btnFree) btnFree.disabled = true;
+            if (btnPaid) btnPaid.disabled = true;
+
+            let timeLeft = seconds;
+            if (healTimerInterval) clearInterval(healTimerInterval);
+
+            healTimerInterval = setInterval(() => {
+                timeLeft--;
+                if (labelFree) labelFree.innerText = `COOLING... ${timeLeft}s`;
+                if (labelPaid) labelPaid.innerText = `COOLING... ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(healTimerInterval);
+                    healTimerInterval = null;
+                    resetHealButtons();
+                }
+            }, 1000);
+        }
+        // --- END CAMPFIRE LOGIC ---
+
+        window.toggleMapPage = () => {
+            const p1 = document.getElementById('grid-primary');
+            const p2 = document.getElementById('grid-secondary');
+            const indicator = document.getElementById('pageIndicator');
+            if (p1.style.display === 'none') {
+                p1.style.display = 'grid'; p2.style.display = 'none'; indicator.innerText = "VILLAGE CORE";
+            } else {
+                p1.style.display = 'none'; p2.style.display = 'grid'; indicator.innerText = "VILLAGE OUTSKIRTS";
+            }
+        };
 
         window.handleLogout = async function() {
             if (confirm("Sever your connection to the Void?")) {
@@ -273,64 +465,14 @@
             }
         }
 
-        function setupLiveListener(uid) {
-            onSnapshot(doc(db, "players", uid), (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const s = data.stats;
-                    
-                    // Update HUD
-                    document.getElementById('pName').innerText = data.name;
-                    document.getElementById('pLvl').innerText = data.level || 0;
-                    document.getElementById('pGold').innerText = data.gold;
-                    document.getElementById('pShards').innerText = data.shards || 0;
-                    
-                    const hpPer = (s.hp / s.maxHp * 100);
-                    document.getElementById('hpBar').style.width = hpPer + "%";
-                    document.getElementById('hpLabel').innerText = `HP: ${Math.floor(s.hp)}/${s.maxHp}`;
-                    
-                    document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
-                    document.getElementById('manaLabel').innerText = `MANA: ${Math.floor(s.mana)}/${s.maxMana}`;
-                    
-                    const expReq = (data.level || 0) === 0 ? 50 : (data.level || 0) * 100;
-                    document.getElementById('expBar').style.width = (Math.min((data.xp || 0) / expReq, 1) * 100) + "%";
-                    document.getElementById('expLabel').innerText = `EXP: ${data.xp || 0}/${expReq}`;
-                    
-                    // Update Modal
-                    document.getElementById('mod-name').innerText = data.name;
-                    document.getElementById('mod-element').innerText = data.element;
-                    document.getElementById('pInitial').innerText = data.name.charAt(0).toUpperCase();
-                    document.getElementById('mod-hp').innerText = s.maxHp;
-                    document.getElementById('mod-mana').innerText = s.maxMana;
-                    document.getElementById('mod-gold').innerText = data.gold;
-                    document.getElementById('mod-shards').innerText = data.shards || 0;
-                    
-                    // Logic: Pulse the Rest tile if HP is below 30%
-                    if (hpPer < 30) {
-                        document.getElementById('restTile').classList.add('pulse-rest');
-                    } else {
-                        document.getElementById('restTile').classList.remove('pulse-rest');
-                    }
-
-                    document.getElementById('bodyTheme').className = `theme-${data.element}`;
-                    document.getElementById('loading').style.display = 'none';
-                }
-            });
-        }
-
-        setInterval(() => { 
-            document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); 
-        }, 1000);
-
+        setInterval(() => { document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); }, 1000);
         window.toggleModal = () => {
             const m = document.getElementById('profileModal');
             m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         };
-
         async function checkPing() {
             const start = Date.now();
-            try {
-                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+            try { await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
                 document.getElementById('pingDisplay').innerText = (Date.now() - start);
             } catch (e) { document.getElementById('pingDisplay').innerText = "??"; }
         }

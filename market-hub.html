@@ -203,11 +203,15 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Initializing security check and linking auth-guard
                 await initSecurity(db, auth, user);
+                
                 onSnapshot(doc(db, "players", user.uid), (snap) => {
                     if (snap.exists()) {
                         const data = snap.data();
+                        // Applying the elemental theme dynamically
                         document.getElementById('bodyTheme').className = `theme-${data.element || 'Soul'}`;
+                        // Updating currency real-time
                         document.getElementById('pGold').innerText = `${data.gold || 0} GOLD`;
                     }
                 });

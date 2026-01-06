@@ -4,127 +4,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cinder Scars - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
     <style>
-        body { 
-            background: #000; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            height: 100dvh; 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden; 
-        }
-
+        :root { --teal: #5eead4; --red: #ff4444; --gold: #ccff00; --bg: #050505; --mana: #22ccff; --orange: #f97316; }
+        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
+        
+        /* Mobile-first game window (400px wide) */
         .scene { 
-            width: 400px; 
-            height: 100dvh; 
-            position: relative; 
-            border-left: 1px solid #200; 
-            border-right: 1px solid #200; 
-            display: flex; 
-            flex-direction: column; 
-            background: radial-gradient(circle at bottom, #1a0505 0%, #000 70%);
+            width: 400px; height: 100dvh; position: relative; 
+            border-left: 1px solid #311; border-right: 1px solid #311; 
+            display: flex; flex-direction: column; 
+            background: radial-gradient(circle at bottom, #1a0505 0%, #000 70%); 
         }
 
-        /* Welcome Notification (Fire Theme) */
+        /* Welcome Notification */
         #welcomeNotif {
             position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
-            width: 80%; background: rgba(15, 0, 0, 0.95); border: 1px solid #ff4444;
-            color: #ff4444; padding: 15px; text-align: center; font-size: 0.7rem;
+            width: 80%; background: rgba(15, 0, 0, 0.95); border: 1px solid var(--red);
+            color: var(--red); padding: 15px; text-align: center; font-size: 0.7rem;
             letter-spacing: 2px; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.27);
             z-index: 1000; box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
         }
         #welcomeNotif.show { top: 20px; }
 
-        .chat-header { 
-            padding: 12px 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid #221111;
-            background: #000;
-        }
+        /* Combat UI Parts */
+        .monster-area { height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .monster-sprite { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255, 68, 68, 0.4)); }
+        
+        .bar-wrap { width: 200px; height: 16px; background: #111; border: 1px solid #331111; position: relative; overflow: hidden; border-radius: 3px; margin-bottom: 4px; }
+        .bar-fill { height: 100%; transition: width 0.3s ease; }
+        .hp-fill { background: var(--red); }
+        .mp-fill { background: var(--mana); }
+        .bar-text { position: absolute; width: 100%; text-align: center; font-size: 0.6rem; line-height: 16px; font-weight: bold; z-index: 2; text-shadow: 1px 1px #000; }
+        
+        .combat-log { flex: 1; padding: 15px; font-size: 0.75rem; color: #888; overflow-y: auto; font-family: 'Courier New', monospace; border-top: 1px solid #221111; background: rgba(0,0,0,0.5); }
+        
+        .player-status { padding: 10px 15px; background: #0a0505; border-top: 1px solid #311; display: flex; gap: 10px; align-items: center; }
+        .mini-bar { flex: 1; height: 10px; }
 
-        .back-btn { color: #ff4444; text-decoration: none; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
-        .room-title { color: #eee; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; }
+        .footer-nav { padding: 15px; background: #000; border-top: 1px solid #221111; }
+        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .btn { background: rgba(255,255,255,0.03); border: 1px solid #331111; color: var(--orange); padding: 12px; font-size: 0.7rem; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; transition: 0.2s; }
+        .btn:active { background: var(--orange); color: #000; }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-        .content-area { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            color: #444; 
-            font-size: 0.6rem; 
-            text-align: center; 
-            padding: 40px; 
-        }
-
-        .lava-glow {
-            width: 150px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #ff4444, transparent);
-            margin: 15px 0;
-            filter: blur(1px);
+        #adminPanel {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; background: #0a0000; border: 1px solid var(--red);
+            padding: 20px; z-index: 3000; display: none; flex-direction: column; border-radius: 8px;
         }
     </style>
 </head>
 <body>
 
-    <div id="welcomeNotif">WELCOME TO CINDER SCARS</div>
+<div id="welcomeNotif">WELCOME TO CINDER SCARS</div>
 
-    <div class="scene">
-        <div class="chat-header">
-            <a class="back-btn" href="wildlands.html">← WILDLANDS</a>
-            <span class="room-title">FIRE REALM</span>
-            <div style="width: 40px;"></div>
-        </div>
-
-        <div class="content-area">
-            <div>
-                <p style="color: #ff4444; font-weight: bold; letter-spacing: 1px;">ZONE: THE BURNING WASTE</p>
-                <div class="lava-glow"></div>
-                <p>[ Placeholder for Cinder Scars Map Assets ]</p>
-                <p style="color: #666; margin-top: 10px;">Scorched earth and molten fury await the unprepared.</p>
-            </div>
-        </div>
+<div class="scene">
+    <div id="adminPanel">
+        <div style="color:var(--red); text-align:center; letter-spacing:3px; margin-bottom:15px; font-size:0.8rem;">CORE OVERRIDE</div>
+        <button class="btn" style="width:100%; border-color:var(--red);" onclick="adminFullRestore()">✨ Restoke Flame</button>
+        <button class="btn" style="width:100%; margin-top:10px;" onclick="toggleAdmin()">Close</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { initSecurity } from "./auth-guard.js";
+    <div style="padding:15px; display:flex; justify-content:space-between; border-bottom:1px solid #211;">
+        <a href="wildlands.html" style="color:var(--red); text-decoration:none; font-size:0.7rem; font-weight:bold;">← RETREAT</a>
+        <span id="resetTrigger" style="cursor:pointer; color:var(--orange); letter-spacing:3px; font-size:0.75rem; font-weight:bold;">CINDER SCARS</span>
+        <span id="pLevel" style="color:#eee; font-size:0.7rem; font-weight:bold;">LVL --</span>
+    </div>
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
-            authDomain: "sovereigns-of-ruin.firebaseapp.com", 
-            projectId: "sovereigns-of-ruin", 
-            appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
-        };
+    <div class="monster-area">
+        <div id="mSprite" class="monster-sprite">🌋</div>
+        <div class="bar-wrap">
+            <div class="bar-text" id="mHPText">DORMANT</div>
+            <div id="mHPFill" class="bar-fill hp-fill" style="width:0%"></div>
+        </div>
+        <div id="mMeta" style="font-size:0.6rem; color:#644; margin-top:8px; text-transform:uppercase; letter-spacing:1px;">The air is thick with ash...</div>
+    </div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+    <div class="combat-log" id="log">
+        <div style="color:var(--orange)">> Heat levels rising. Welcome, Sovereign.</div>
+    </div>
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Ensure auth-guard is linked as requested
-                const myProfile = await initSecurity(db, auth, user);
-                
-                if (myProfile) {
-                    // Slide down the welcome notification
-                    setTimeout(() => {
-                        const notif = document.getElementById('welcomeNotif');
-                        notif.classList.add('show');
-                        setTimeout(() => notif.classList.remove('show'), 4000);
-                    }, 500);
-                }
-            } else { 
-                window.location.href = "index.html"; 
+    <div class="player-status">
+        <div style="font-size: 0.6rem; color: var(--red); font-weight: bold;">HP</div>
+        <div class="bar-wrap mini-bar"><div id="pHPFill" class="bar-fill hp-fill" style="width: 100%"></div></div>
+        <div style="font-size: 0.6rem; color: var(--mana); font-weight: bold;">MP</div>
+        <div class="bar-wrap mini-bar"><div id="pMPFill" class="bar-fill mp-fill" style="width: 100%"></div></div>
+    </div>
+
+    <div class="footer-nav">
+        <div class="grid-buttons">
+            <button class="btn" onclick="attack()" disabled id="atkBtn">Attack</button>
+            <button class="btn" onclick="useSkill()" disabled>Skill</button>
+        </div>
+        <button id="nextBtn" class="btn" style="width:100%; border-color:#411; color:#666;" onclick="attemptSpawn()">Search Cinders</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initSecurity } from "./auth-guard.js";
+
+    // System Logic
+    import { processLevelUp, calculateCombatResult, getRequiredXP, rollRange } from "./system.js";
+    import { getRandomMonsterFromZone } from "./monsters.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let pData = null;
+    let monster = null;
+    let isBusy = false;
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "index.html"; return; }
+        await initSecurity(db, auth, user);
+        
+        onSnapshot(doc(db, "players", user.uid), (snap) => {
+            if (!snap.exists()) return;
+            pData = snap.data();
+            updateUI();
+            
+            // Show welcome once
+            const notif = document.getElementById('welcomeNotif');
+            if (!notif.dataset.seen) {
+                notif.classList.add('show');
+                notif.dataset.seen = "true";
+                setTimeout(() => notif.classList.remove('show'), 4000);
             }
         });
-    </script>
+    });
+
+    // SPAWN LOGIC (Currently locked as requested)
+    window.attemptSpawn = function() {
+        addLog("The heat is too intense to venture deeper yet...", "#644");
+        // Monsters will be added here later using zone: "CINDER_SCARS"
+    };
+
+    window.attack = function() {
+        if (!monster || isBusy) return;
+        // Combat logic stays ready for when monsters are added
+    };
+
+    function updateUI() {
+        if (!pData) return;
+        document.getElementById('pLevel').innerText = `LVL ${pData.level}`;
+        
+        // Bars
+        const hpP = (pData.stats.hp / pData.stats.maxHp) * 100;
+        const mpP = (pData.stats.mana / pData.stats.maxMana) * 100;
+        document.getElementById('pHPFill').style.width = Math.max(0, hpP) + "%";
+        document.getElementById('pMPFill').style.width = Math.max(0, mpP) + "%";
+    }
+
+    function addLog(msg, color) {
+        const l = document.getElementById('log');
+        l.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+        l.scrollTop = l.scrollHeight;
+    }
+
+    async function sync() { await updateDoc(doc(db, "players", auth.currentUser.uid), pData); }
+
+    // Admin
+    let clickCount = 0;
+    document.getElementById('resetTrigger').onclick = () => { if (++clickCount >= 5) { toggleAdmin(); clickCount = 0; } };
+    window.toggleAdmin = () => {
+        const p = document.getElementById('adminPanel');
+        p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
+    };
+    window.adminFullRestore = async () => {
+        pData.stats.hp = pData.stats.maxHp;
+        pData.stats.mana = pData.stats.maxMana;
+        await sync();
+        toggleAdmin();
+    };
+</script>
+
 </body>
 </html>

@@ -3,543 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Threshold of Souls - Sovereigns of Ruin</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Threshold of Souls - Combat</title>
     <style>
+        :root { --teal: #62ffe1; --red: #ff4444; --gold: #ffcc00; --bg: #050505; --mana: #22ccff; }
         body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
-        .scene { width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; display: flex; flex-direction: column; background: radial-gradient(circle at center, #050505 0%, #000 100%); overflow: hidden; }
-
-        /* ADMIN / GOD MODE OVERLAY */
-        #adminPanel {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 320px; max-height: 85dvh; background: rgba(15, 15, 15, 0.98); border: 1px solid #5eead4;
-            padding: 20px; z-index: 2000; display: none; flex-direction: column;
-            border-radius: 12px; box-shadow: 0 0 40px rgba(0,0,0,1); backdrop-filter: blur(15px);
-            overflow-y: auto;
-        }
-        .admin-title { color: #5eead4; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 15px; text-align: center; font-weight: bold; }
         
-        .admin-overview { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #333; }
-        .stat-line { display: flex; justify-content: space-between; font-size: 0.65rem; color: #aaa; margin-bottom: 4px; font-family: monospace; }
-        .stat-line span:last-child { color: #5eead4; font-weight: bold; }
-
-        .admin-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .spawn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; border-top: 1px solid #333; padding-top: 12px; }
-        
-        .spawn-btn { 
-            padding: 10px; font-size: 0.6rem; background: #111; border: 1px solid #333; color: #aaa; 
-            cursor: pointer; border-radius: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        .scene { 
+            width: 400px; 
+            height: 100dvh; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            background: #050505; 
+            border-left: 1px solid #111; 
+            border-right: 1px solid #111;
         }
-        .spawn-btn:active { background: #5eead4; color: #000; border-color: #5eead4; }
-        .lvl-tag { font-size: 0.5rem; color: #5eead4; font-weight: bold; background: rgba(94, 234, 212, 0.1); padding: 2px 6px; border-radius: 4px; }
 
-        /* SCENE STYLES */
+        /* GOD MENU STYLES */
+        #godMenu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 10000; display: none;
+            padding: 20px; box-sizing: border-box; overflow-y: auto;
+            border: 1px solid var(--gold);
+        }
+        .god-header { color: var(--gold); font-size: 0.9rem; font-weight: 900; text-align: center; margin-bottom: 15px; letter-spacing: 2px; }
+        .god-card { background: #111; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .god-label { font-size: 0.55rem; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .god-stat { font-size: 0.75rem; color: #fff; margin-bottom: 2px; }
+        .god-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .god-btn { 
+            background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 8px 4px; 
+            font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold;
+        }
+        .god-btn:active { background: var(--teal); color: #000; }
+        .god-reset { background: #300; border-color: #600; color: #ff4444; margin-top: 15px; width: 100%; }
+
+        /* DEATH OVERLAY */
         #deathOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); z-index: 1000;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; backdrop-filter: blur(15px);
+            background: radial-gradient(circle, #1a0000 0%, #000 80%);
+            display: none; z-index: 999; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            animation: fadeInDeath 2s forwards;
         }
-        .death-crown { font-size: 4rem; margin-bottom: 20px; animation: pulseRed 3s infinite; filter: drop-shadow(0 0 15px #ff0000); }
-        .death-title { color: #ff0000; font-size: 1.5rem; letter-spacing: 5px; font-weight: 900; margin-bottom: 10px; }
-        .death-msg { color: #888; font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; padding: 0 40px; line-height: 1.6; }
-        
-        @keyframes pulseRed {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 25px #ff0000); }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
+        .death-text { color: #ff0000; font-size: 1.4rem; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 25px rgba(255, 0, 0, 0.9); margin-bottom: 15px; }
+        .death-subtitle { color: #666; font-size: 0.75rem; font-style: italic; max-width: 80%; line-height: 1.4; }
+        @keyframes fadeInDeath { from { opacity: 0; background: #000; } to { opacity: 1; } }
 
-        .chat-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111; background: #000; z-index: 10; }
-        .back-btn { color: #5eead4; text-decoration: none; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
-        .room-title { color: #eee; font-size: 0.75rem; font-weight: bold; letter-spacing: 3px; cursor: pointer; user-select: none; }
-
-        .battle-stage { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-        .monster-area { height: 180px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #111; }
-        .monster-sprite { font-size: 3rem; filter: drop-shadow(0 0 20px rgba(94, 234, 212, 0.2)); }
-        
-        .bar-wrap { width: 160px; height: 12px; background: #111; border: 1px solid #333; margin-top: 8px; position: relative; border-radius: 2px; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .hp-bg { background: #ff4444; }
-        .mp-bg { background: #22ccff; }
-        .xp-bg { background: #ccff00; }
-        .bar-text { position: absolute; width: 100%; text-align: center; font-size: 0.45rem; line-height: 12px; font-weight: bold; color: #fff; text-shadow: 1px 1px #000; z-index: 2; }
-        .monster-info { margin-top: 5px; font-size: 0.55rem; letter-spacing: 1px; color: #888; text-transform: uppercase; }
-
-        .action-hub { flex: 1; display: flex; flex-direction: column; background: #050505; min-height: 0; }
-        .xp-hud { padding: 8px 15px 2px 15px; background: #0a0a0a; display: flex; flex-direction: column; align-items: center; }
-        .xp-bar-container { width: 100%; height: 6px; background: #111; border: 1px solid #222; border-radius: 10px; overflow: hidden; margin-top: 4px; }
-
-        .player-hud { padding: 10px 15px; background: #0a0a0a; border-bottom: 1px solid #111; display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; }
-        .hud-stat { display: flex; flex-direction: column; align-items: center; }
-        .hud-label { font-size: 0.45rem; color: #555; margin-bottom: 2px; font-weight: bold; letter-spacing: 1px; }
-
-        .combat-log { flex: 1; padding: 15px; font-size: 0.65rem; color: #888; overflow-y: auto; font-family: monospace; background: #020202; }
-        .log-entry { margin-bottom: 5px; border-left: 2px solid #222; padding-left: 8px; line-height: 1.4; }
-
-        .footer-nav { border-top: 1px solid #222; background: #000; padding: 12px; flex-shrink: 0; }
-        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 5px; }
-        .btn { background: #0a0a0a; border: 1px solid #333; color: #5eead4; padding: 14px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; cursor: pointer; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.2s; }
-        .btn:active { background: #5eead4; color: #000; }
-        .btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
-        
-        .count { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px; font-size: 0.6rem; color: #fff; }
+        /* UI ELEMENTS */
+        .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #1a1a1a; }
+        .map-title { font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; color: #fff; text-transform: uppercase; cursor: pointer; }
+        .monster-area { padding: 15px 0; display: flex; flex-direction: column; align-items: center; background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%); }
+        .monster-sprite { font-size: 3.5rem; margin-bottom: 8px; filter: drop-shadow(0 0 10px rgba(98, 255, 225, 0.2)); }
+        .combat-log { height: 100px; padding: 10px 15px; font-size: 0.65rem; color: #888; overflow-y: auto; font-family: 'monospace'; background: #020202; line-height: 1.5; border-top: 1px solid #111; border-bottom: 1px solid #111; }
+        .player-footer { background: #080808; padding: 12px 15px; }
+        .footer-line { height: 2px; background: #111; border-bottom: 1px solid #1a1a1a; margin-bottom: 12px; }
+        .player-status-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .bar-wrap { width: 100%; height: 8px; background: #111; border: 1px solid #222; position: relative; overflow: hidden; border-radius: 1px; }
+        .mini-bar { flex: 1; }
+        .bar-fill { height: 100%; transition: width 0.3s ease; }
+        .hp-fill { background: var(--red); }
+        .mp-fill { background: var(--mana); }
+        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px 5px; font-size: 0.6rem; font-weight: 800; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
+        .btn:active { background: var(--teal); color: #000; }
+        .btn:disabled { opacity: 0.15; pointer-events: none; }
+        .shake { animation: shake 0.15s ease-in-out infinite; }
+        @keyframes shake { 0% { transform: translate(0, 0); } 25% { transform: translate(6px, -3px); } 50% { transform: translate(-6px, 3px); } 75% { transform: translate(6px, 3px); } 100% { transform: translate(0, 0); } }
     </style>
 </head>
 <body>
 
-    <div class="scene">
-        <div id="adminPanel">
-            <div class="admin-title">GOD MODE CONSOLE</div>
-            
-            <div class="admin-overview" id="adminVesselStats"></div>
-
-            <button class="btn" style="width: 100%; border-color: #5eead4; margin-bottom: 15px; background: rgba(94, 234, 212, 0.1); justify-content: center;" onclick="adminFullRestore()">
-                ✨ FULL RESTORE (HP/MP)
-            </button>
-
-            <div class="admin-row">
-                <button class="btn" style="flex:1; justify-content: center;" onclick="modifyLevel(1)">LVL +1</button>
-                <button class="btn" style="flex:1; justify-content: center;" onclick="modifyLevel(-1)">LVL -1</button>
-            </div>
-            <div class="admin-row">
-                <button class="btn" style="flex:1; justify-content: center; color: #ccff00;" onclick="modifyGold(500)">+500G</button>
-                <button class="btn" style="flex:1; justify-content: center; color: #ff4444;" onclick="modifyGold(-500)">-500G</button>
-            </div>
-
-            <div class="hud-label" style="text-align:center; margin:15px 0 5px 0;">INSTANT SPAWN (BY TIER)</div>
-            <div class="spawn-grid" id="adminSpawnGrid"></div>
-
-            <button class="btn" style="border-color: #ff4444; color: #ff4444; margin: 20px 0 10px 0; justify-content: center;" onclick="confirmHardReset()">HARD RESET PROGRESS</button>
-            <button class="btn" style="border-color: #333; color: #888; justify-content: center;" onclick="toggleAdmin()">CLOSE</button>
+<div class="scene" id="mainScene">
+    <div id="godMenu">
+        <div class="god-header">ADMIN COMMAND CENTER</div>
+        <div class="god-card">
+            <span class="god-label">Vitality & Stats</span>
+            <div class="god-stat" id="g-hp-mp">HP: 0 | MP: 0</div>
+            <div class="god-stat" id="g-base">Base Atk: 0 | Def: 0</div>
+            <div class="god-stat" id="g-gear" style="color:var(--teal)">Gear Boost: +0 Atk | +0 Def</div>
+            <button class="god-btn" style="width:100%; margin-top:8px; color:var(--teal)" onclick="godRestore()">Restore HP/MP</button>
         </div>
-
-        <div id="deathOverlay">
-            <div class="death-crown">💀</div>
-            <div class="death-title">VESSEL BROKEN</div>
-            <div class="death-msg">"The void does not claim what is already empty. Your soul returns to the threshold, forever incomplete."</div>
-            <button class="btn" style="border-color: #ff0000; color: #ff0000; width: 200px; justify-content: center;" onclick="location.reload()">REAWAKEN</button>
+        <div class="god-card">
+            <span class="god-label">Skill List</span>
+            <div id="g-spells" style="font-size:0.6rem; color:var(--mana); line-height:1.2;">-</div>
         </div>
-
-        <div class="chat-header">
-            <a class="back-btn" href="wildlands.html">← WILDLANDS</a>
-            <span class="room-title" id="resetTrigger">THRESHOLD</span>
-            <div style="width: 40px;"></div>
+        <div class="god-card">
+            <span class="god-label">Adjustments</span>
+            <div class="god-grid">
+                <button class="god-btn" onclick="godGold(500)">+500 Gold</button>
+                <button class="god-btn" onclick="godGold(-500)">-500 Gold</button>
+                <button class="god-btn" onclick="godLevel(1)">Level +1</button>
+                <button class="god-btn" onclick="godLevel(-1)">Level -1</button>
+            </div>
         </div>
+        <button class="god-btn god-reset" onclick="godReset()">HARD RESET PROFILE</button>
+        <button class="god-btn" style="width:100%; margin-top:10px;" onclick="closeGodMenu()">Close God Menu</button>
+    </div>
 
-        <div class="battle-stage">
-            <div class="monster-area">
-                <div id="mSprite" class="monster-sprite">🌑</div>
-                <div class="bar-wrap">
-                    <div class="bar-text" id="mHPText">0/0</div>
-                    <div id="mHPFill" class="bar-fill hp-bg" style="width: 100%;"></div>
-                </div>
-                <div id="mMeta" class="monster-info">SUMMONING...</div>
-            </div>
-
-            <div class="action-hub">
-                <div class="xp-hud">
-                    <span class="hud-label" id="pLevelText">SOVEREIGN LEVEL 1</span>
-                    <div class="xp-bar-container">
-                        <div id="xpFill" class="bar-fill xp-bg" style="width: 0%;"></div>
-                    </div>
-                </div>
-
-                <div class="player-hud">
-                    <div class="hud-stat">
-                        <span class="hud-label">INTEGRITY (HP)</span>
-                        <div class="bar-wrap">
-                            <div class="bar-text" id="pHPText">100/100</div>
-                            <div id="pHPFill" class="bar-fill hp-bg" style="width: 100%;"></div>
-                        </div>
-                    </div>
-                    <div class="hud-stat">
-                        <span class="hud-label">ENERGY (MP)</span>
-                        <div class="bar-wrap">
-                            <div class="bar-text" id="pMPText">50/50</div>
-                            <div id="pMPFill" class="bar-fill mp-bg" style="width: 100%;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="combat-log" id="log"></div>
-
-                <footer class="footer-nav">
-                    <div class="grid-buttons" id="abilityContainer">
-                        <button class="btn combat-btn" onclick="handleAttack()"><span>Attack</span></button>
-                    </div>
-                    
-                    <div class="grid-buttons" style="margin-top:8px;">
-                        <button class="btn combat-btn" id="hpBtn" style="color:#ff4444" onclick="usePotion('Health Tonic')">
-                            <span>Health Pot</span> <span class="count" id="hpCount">0</span>
-                        </button>
-                        <button class="btn combat-btn" id="mpBtn" style="color:#22ccff" onclick="usePotion('Mana Core')">
-                            <span>Mana Pot</span> <span class="count" id="mpCount">0</span>
-                        </button>
-                        <button class="btn" style="grid-column: span 2; border-color: #333; color: #888;" onclick="spawnMonster()">Explore Next Floor</button>
-                    </div>
-                </footer>
-            </div>
+    <div id="deathOverlay">
+        <div id="deathContent">
+            <div class="death-text">YOUR SOUL IS MINE...</div>
+            <div class="death-subtitle">Hahahaha... another failure for the abyss.</div>
         </div>
     </div>
 
-    <script type="module">
+    <div class="top-nav">
+        <a href="wildlands.html" style="color:var(--teal); text-decoration:none; font-size:0.6rem; font-weight:bold;">← RETREAT</a>
+        <span class="map-title" onclick="godTrigger()">Threshold of Souls</span>
+        <span id="pLevel" style="color:var(--teal); font-size:0.7rem; font-weight:bold;">LVL --</span>
+    </div>
+
+    <div class="monster-area">
+        <div id="mSprite" class="monster-sprite">🌑</div>
+        <div id="mMeta" style="font-size:0.6rem; color:#aaa; margin-bottom:5px; text-transform:uppercase; font-weight:bold;">SEARCHING...</div>
+        <div class="bar-wrap" style="width: 200px; height: 12px;">
+            <div id="mHPFill" class="bar-fill hp-fill" style="width:0%"></div>
+        </div>
+        <div id="mHPText" style="font-size: 0.55rem; margin-top: 4px; font-weight: bold; color: var(--red);">---</div>
+    </div>
+
+    <div class="combat-log" id="log">
+        <div style="color:var(--teal)">> System online.</div>
+    </div>
+
+    <div class="player-footer">
+        <div class="player-status-row">
+            <div style="font-size: 0.5rem; color: var(--red); font-weight: bold; width: 20px;">HP</div>
+            <div class="bar-wrap mini-bar"><div id="pHPFill" class="bar-fill hp-fill" style="width: 100%"></div></div>
+            <div style="font-size: 0.5rem; color: var(--mana); font-weight: bold; width: 20px; margin-left: 10px;">MP</div>
+            <div class="bar-wrap mini-bar"><div id="pMPFill" class="bar-fill mp-fill" style="width: 100%"></div></div>
+        </div>
+        <div class="footer-line"></div>
+        <div class="grid-buttons" id="abilityContainer" style="margin-bottom: 6px;">
+            <button class="btn" id="atkBtn" onclick="attack()" disabled>Standard Attack</button>
+            <button class="btn" id="skillBtn" onclick="useSkill()" disabled>Skill</button>
+        </div>
+        <div class="grid-buttons">
+            <button class="btn" style="color:var(--red)" onclick="usePotion('7')">HP POT (<span id="hpCount">0</span>)</button>
+            <button class="btn" style="color:var(--mana)" onclick="usePotion('8')">MP POT (<span id="mpCount">0</span>)</button>
+            <button id="nextBtn" class="btn" style="grid-column: span 2; border-color:var(--teal); color: #fff; margin-top: 4px;" onclick="attemptSpawn()">Explore Floor</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { initSecurity } from "./auth-guard.js";
+    import { MONSTER_DATABASE } from "./monsters.js";
+    import { ITEM_LIBRARY } from "./items.js"; 
+    import { calculateCombatResult, rollRange, processLevelUp } from "./system.js";
 
     const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    const ADMIN_UID = "v6M5KflMjQam6M9LUeZym666fKw1";
     let pData = null;
-    let currentMonster = null;
-    let isProcessingVictory = false;
-    let isTurnProcessing = false; 
-
-    const elementColors = { soul: "#62ffe1", fire: "#ff4444", air: "#a8ff62", water: "#22ccff", earth: "#ffcc66", void: "#bf66ff" };
-    const skillBook = {
-        "Soul Strike": { mana: 15, multi: 2.5, element: "soul" },
-        "Ember": { mana: 10, multi: 2.0, element: "fire" },
-        "Gale": { mana: 10, multi: 2.0, element: "air" },
-        "Splash": { mana: 10, multi: 2.0, element: "water" },
-        "Pebble Toss": { mana: 10, multi: 2.0, element: "earth" },
-        "Tidal Wave": { mana: 25, multi: 3.8, element: "water" },
-        "Fireball": { mana: 20, multi: 3.2, element: "fire" },
-        "Void Bolt": { mana: 22, multi: 3.4, element: "void" }
-    };
-
-    // --- REBALANCED BESTIARY (Levels 1-10) ---
-    const bestiary = [
-        { name: "Lost Wisp", emoji: "👻", hp: 60, atk: 12, def: 2 },        // Lvl 1
-        { name: "Grave Rat", emoji: "🐀", hp: 110, atk: 18, def: 4 },       // Lvl 2
-        { name: "Void Walker", emoji: "👣", hp: 160, atk: 24, def: 8 },     // Lvl 3
-        { name: "Bone Scavenger", emoji: "🦴", hp: 220, atk: 30, def: 12 },  // Lvl 4
-        { name: "Shadow Husk", emoji: "👤", hp: 290, atk: 36, def: 16 },    // Lvl 5
-        { name: "Mist Horror", emoji: "🌫️", hp: 370, atk: 42, def: 22 },    // Lvl 6
-        { name: "Soul Eater", emoji: "👾", hp: 460, atk: 48, def: 28 },     // Lvl 7
-        { name: "Wailing Knight", emoji: "⚔️", hp: 560, atk: 54, def: 35 },  // Lvl 8
-        { name: "Reaper Acolyte", emoji: "🧙", hp: 670, atk: 60, def: 42 },  // Lvl 9
-        { name: "Threshold Warden", emoji: "🐲", hp: 800, atk: 68, def: 50 } // Lvl 10
-    ];
+    let monster = null;
+    let isBusy = false;
+    let godClicks = 0;
 
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            await initSecurity(db, auth, user);
-            onSnapshot(doc(db, "players", user.uid), (snap) => {
-                const rawData = snap.data();
-                if (!rawData) return;
-                
-                pData = {
-                    ...rawData,
-                    level: Number(rawData.level) || 1,
-                    xp: Number(rawData.xp) || 0,
-                    gold: Number(rawData.gold) || 0,
-                    stats: {
-                        hp: Number(rawData.stats?.hp) || 100,
-                        maxHp: Number(rawData.stats?.maxHp) || 100,
-                        mana: Number(rawData.stats?.mana) || 50,
-                        maxMana: Number(rawData.stats?.maxMana) || 50,
-                        atk: Number(rawData.stats?.atk) || 10,
-                        def: Number(rawData.stats?.def) || 5
-                    }
-                };
-                
-                if (!currentMonster) spawnMonster();
-                updateUI();
-                renderAbilityButtons();
-                renderAdminSpawner(); 
-                refreshAdminStats();
-            });
-        } else { window.location.href = "index.html"; }
+        if (!user) return;
+        await initSecurity(db, auth, user);
+        onSnapshot(doc(db, "players", user.uid), (snap) => {
+            if (!snap.exists()) return;
+            pData = snap.data();
+            updateUI();
+            if(document.getElementById('godMenu').style.display === 'block') refreshGodMenu();
+        });
     });
 
-    // --- NEW SOVEREIGN DAMAGE FORMULA ---
-    function calcDmg(attackerAtk, defenderDef, multiplier = 1) {
-        const base = attackerAtk * multiplier;
-        // Defense reduces damage by 75% of its value
-        let finalDmg = Math.floor(base - (defenderDef * 0.75));
-        
-        // Ensure attacks always do at least 15% of the base attack (prevents 0 dmg)
-        const minDmg = Math.floor(base * 0.15);
-        finalDmg = Math.max(minDmg, finalDmg);
+    // --- GOD MENU LOGIC ---
+    window.godTrigger = function() {
+        if(auth.currentUser?.uid !== ADMIN_UID) return;
+        godClicks++;
+        if(godClicks >= 5) {
+            document.getElementById('godMenu').style.display = 'block';
+            refreshGodMenu();
+            godClicks = 0;
+        }
+    };
 
-        const variance = (Math.random() * 0.2) + 0.9; // 90% to 110%
-        return Math.floor(finalDmg * variance);
+    window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
+
+    function refreshGodMenu() {
+        if(!pData) return;
+        let gearAtk = 0, gearDef = 0;
+        (pData.inventory || []).forEach(i => { if(i.equipped) { gearAtk += (i.atk || 0); gearDef += (i.def || 0); }});
+        
+        document.getElementById('g-hp-mp').innerText = `HP: ${pData.stats.hp}/${pData.stats.maxHp} | MP: ${pData.stats.mana}/${pData.stats.maxMana}`;
+        document.getElementById('g-base').innerText = `Base Atk: ${pData.stats.atk} | Def: ${pData.stats.def}`;
+        document.getElementById('g-gear').innerText = `Gear Boost: +${gearAtk} Atk | +${gearDef} Def`;
+        
+        // Use 'skills' field from DB
+        const skillList = (pData.skills || []).map(s => `[${s}]`).join("<br>");
+        document.getElementById('g-spells').innerHTML = skillList || "No skills found";
     }
 
-    function renderAbilityButtons() {
-        if (!pData) return;
-        const container = document.getElementById('abilityContainer');
-        container.innerHTML = `<button class="btn combat-btn" onclick="handleAttack()"><span>Attack</span></button>`;
-        pData.skills.forEach(skillName => {
-            if (skillName && skillBook[skillName]) {
-                const skill = skillBook[skillName];
-                const color = elementColors[skill.element] || "#5eead4";
-                const btn = document.createElement('button');
-                btn.className = "btn btn-skill combat-btn";
-                btn.style.color = color;
-                btn.style.borderColor = color + "66";
-                btn.onclick = () => window.handleSkill(skillName);
-                btn.innerHTML = `<span>${skillName}</span> <span class="count" style="background:${color}22">${skill.mana}M</span>`;
-                container.appendChild(btn);
-            }
-        });
+    window.godRestore = async () => {
+        pData.stats.hp = pData.stats.maxHp;
+        pData.stats.mana = pData.stats.maxMana;
+        await sync();
+    };
+
+    window.godGold = async (val) => {
+        pData.gold = Math.max(0, (pData.gold || 0) + val);
+        await sync();
+    };
+
+    window.godLevel = async (val) => {
+        pData.level = Math.max(1, (pData.level || 1) + val);
+        await sync();
+    };
+
+    window.godReset = async () => {
+        if(!confirm("HARD RESET: Clear items, training, gold, and extra skills?")) return;
+        pData.gold = 0;
+        pData.exp = 0;
+        pData.level = 1;
+        pData.inventory = [];
+        pData.training = { str: 0, agi: 0, int: 0 };
+        pData.stats = { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 5, luck: 0 };
+        
+        // Fix: Use skills field
+        if(pData.skills && pData.skills.length > 0) pData.skills = [pData.skills[0]];
+        
+        await sync();
+        location.reload();
+    };
+
+    // --- BATTLE LOGIC ---
+    window.attemptSpawn = function() {
+        if (!pData || isBusy || monster) return;
+        document.getElementById('log').innerHTML = "";
+        const zonePool = Object.values(MONSTER_DATABASE["THRESHOLD_OF_SOULS"]);
+        const selected = zonePool[Math.floor(Math.random() * zonePool.length)];
+        if (selected) {
+            monster = JSON.parse(JSON.stringify(selected)); 
+            monster.curHp = monster.hp;
+            addLog(`Manifested ${monster.name}!`, "#eee");
+        }
+        updateUI();
+    };
+
+    window.attack = function() {
+        if (!monster || isBusy) return;
+        isBusy = true;
+        let gearAtk = 0;
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
+        const result = calculateCombatResult((pData.stats?.atk || 10) + gearAtk, monster.def, pData.stats?.luck || 0);
+        if (result.isMiss) addLog(`Missed!`, "#555");
+        else {
+            monster.curHp -= result.damage;
+            addLog(`Hit for ${result.damage} DMG.`, result.isCrit ? "var(--gold)" : "var(--teal)");
+            triggerShake('mSprite', false);
+        }
+        if (monster.curHp <= 0) setTimeout(handleVictory, 400);
+        else setTimeout(monsterTurn, 600);
+        updateUI();
+    };
+
+    window.useSkill = async function() {
+        // Fix: Use skills array
+        if (!monster || isBusy || !pData.skills || pData.skills.length === 0) return;
+        
+        const spellName = pData.skills[0];
+        const manaCost = 15; // Default cost for Soul Strike
+
+        if (pData.stats.mana < manaCost) {
+            addLog("Not enough MP!", "var(--mana)");
+            return;
+        }
+
+        isBusy = true;
+        pData.stats.mana -= manaCost;
+        
+        let gearAtk = 0;
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
+        
+        const baseAtk = (pData.stats?.atk || 10) + gearAtk;
+        const spellDmg = Math.floor(baseAtk * 1.8); // 1.8x multiplier for Soul Strike
+        const result = calculateCombatResult(spellDmg, monster.def, (pData.stats?.luck || 0) + 5);
+        
+        addLog(`Cast ${spellName}!`, "var(--mana)");
+        if (result.isMiss) addLog(`The spell missed!`, "#555");
+        else {
+            monster.curHp -= result.damage;
+            addLog(`${spellName} deals ${result.damage} DMG.`, "var(--teal)");
+            triggerShake('mSprite', false);
+        }
+
+        if (monster.curHp <= 0) setTimeout(handleVictory, 400);
+        else setTimeout(monsterTurn, 600);
+        
+        updateUI();
+        await sync();
+    };
+
+    function monsterTurn() {
+        if (!monster) { isBusy = false; return; }
+        let gearDef = 0;
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearDef += (i.def || 0); });
+        const mAtk = rollRange(monster.atkMin, monster.atkMax);
+        const result = calculateCombatResult(mAtk, (pData.stats.def || 5) + gearDef, 0);
+        if (!result.isMiss) {
+            pData.stats.hp = Math.max(0, pData.stats.hp - result.damage);
+            addLog(`${monster.name} deals ${result.damage} DMG.`, "var(--red)");
+            triggerShake('mainScene', false);
+        }
+        isBusy = false;
+        if (pData.stats.hp <= 0) handleDeath();
+        else { sync(); updateUI(); }
+    }
+
+    function handleDeath() {
+        isBusy = true;
+        const overlay = document.getElementById('deathOverlay');
+        overlay.style.display = 'flex';
+        setTimeout(() => { window.location.href = "map.html"; }, 5000);
+        sync();
+    }
+
+    async function handleVictory() {
+        addLog(`Victory! +${monster.xp} XP`, "var(--gold)");
+        pData.exp = (pData.exp || 0) + monster.xp;
+        pData.gold = (pData.gold || 0) + monster.gold;
+        processLevelUp(pData);
+        monster = null;
+        isBusy = false;
+        await sync();
+        setTimeout(() => { updateUI(); }, 800);
     }
 
     function updateUI() {
-        if(!currentMonster || !pData) return;
-        const mHpPerc = Math.max(0, (currentMonster.curHp / currentMonster.hp) * 100);
-        document.getElementById('mHPFill').style.width = mHpPerc + "%";
-        document.getElementById('mHPText').innerText = `${Math.floor(currentMonster.curHp)}/${currentMonster.hp}`;
-        document.getElementById('mSprite').innerText = currentMonster.emoji;
-        document.getElementById('mMeta').innerText = `${currentMonster.name} (LVL ${currentMonster.level})`;
+        if (!pData) return;
+        document.getElementById('pLevel').innerText = `LVL ${pData.level || 1}`;
+        const hasMonster = !!monster;
         
-        const pHpPerc = Math.max(0, (pData.stats.hp / pData.stats.maxHp) * 100);
-        const pMpPerc = Math.max(0, (pData.stats.mana / pData.stats.maxMana) * 100);
-        document.getElementById('pHPFill').style.width = pHpPerc + "%";
-        document.getElementById('pMPFill').style.width = pMpPerc + "%";
-        document.getElementById('pHPText').innerText = `${Math.floor(pData.stats.hp)}/${pData.stats.maxHp}`;
-        document.getElementById('pMPText').innerText = `${Math.floor(pData.stats.mana)}/${pData.stats.maxMana}`;
-        
-        const req = (pData.level + 1) * 100;
-        document.getElementById('xpFill').style.width = Math.min(100, (pData.xp / req) * 100) + "%";
-        document.getElementById('pLevelText').innerText = `SOVEREIGN LEVEL ${pData.level} (${pData.xp} / ${req} XP)`;
+        // Fix: Updated Skill Detection for 'skills' array
+        const skillBtn = document.getElementById('skillBtn');
+        document.getElementById('atkBtn').disabled = !hasMonster || isBusy;
 
-        const hpPotCount = pData.inventory.filter(i => (typeof i === 'string' ? i : i.name) === "Health Tonic").length;
-        const mpPotCount = pData.inventory.filter(i => (typeof i === 'string' ? i : i.name) === "Mana Core").length;
-        document.getElementById('hpCount').innerText = hpPotCount;
-        document.getElementById('mpCount').innerText = mpPotCount;
-        
-        const combatButtons = document.querySelectorAll('.combat-btn');
-        combatButtons.forEach(btn => {
-            btn.disabled = isTurnProcessing || isProcessingVictory;
-        });
-    }
-
-    window.handleAttack = function() {
-        if (isTurnProcessing || currentMonster.curHp <= 0 || isProcessingVictory) return;
-        isTurnProcessing = true;
-        let dmg = calcDmg(pData.stats.atk, currentMonster.def);
-        currentMonster.curHp -= dmg;
-        addLog(`You strike for ${dmg} DMG.`, "#5eead4");
-        checkDeath();
-    };
-
-    window.handleSkill = function(skillName) {
-        if (isTurnProcessing || isProcessingVictory || currentMonster.curHp <= 0) return;
-        const skill = skillBook[skillName];
-        if (pData.stats.mana < skill.mana) return addLog("Insufficient Energy!", "#ff4444");
-        isTurnProcessing = true;
-        pData.stats.mana -= skill.mana;
-        let dmg = calcDmg(pData.stats.atk, currentMonster.def, skill.multi);
-        currentMonster.curHp -= dmg;
-        const color = elementColors[skill.element] || "#62ffe1";
-        addLog(`${skillName.toUpperCase()}! ${dmg} DMG.`, color);
-        checkDeath();
-        updateUI();
-    };
-
-    function checkDeath() {
-        if (currentMonster.curHp <= 0) {
-            currentMonster.curHp = 0;
-            updateUI();
-            grantRewards();
+        if (pData.skills && pData.skills.length > 0) {
+            const spellName = pData.skills[0];
+            const cost = 15; 
+            skillBtn.innerText = `${spellName} (${cost}MP)`;
+            skillBtn.disabled = !hasMonster || isBusy || pData.stats.mana < cost;
         } else {
-            updateUI();
-            setTimeout(monsterTurn, 600);
+            skillBtn.innerText = "No Skill";
+            skillBtn.disabled = true;
         }
-    }
 
-    function monsterTurn() {
-        if (currentMonster.curHp <= 0) {
-            isTurnProcessing = false;
-            return;
-        }
-        let dmg = calcDmg(currentMonster.atk, pData.stats.def);
-        pData.stats.hp -= dmg;
-        addLog(`${currentMonster.name} deals ${dmg} DMG.`, "#ff4444");
-        if (pData.stats.hp <= 0) { 
-            pData.stats.hp = 1; 
-            addLog("CRITICAL DAMAGE! RETREATING...", "#ff0000"); 
-            syncPlayerRetreat();
+        document.getElementById('nextBtn').style.display = hasMonster ? 'none' : 'block';
+        
+        if (monster) {
+            document.getElementById('mHPFill').style.width = Math.max(0, (monster.curHp / monster.hp) * 100) + "%";
+            document.getElementById('mHPText').innerText = `${Math.floor(monster.curHp)} / ${monster.hp}`;
+            document.getElementById('mSprite').innerText = monster.emoji || "👾";
+            document.getElementById('mMeta').innerText = `${monster.name} (LVL ${monster.level})`;
         } else {
-            isTurnProcessing = false; 
-            updateUI();
+            document.getElementById('mHPFill').style.width = "0%";
+            document.getElementById('mHPText').innerText = "---";
+            document.getElementById('mSprite').innerText = "🌑";
+            document.getElementById('mMeta').innerText = "FLOOR CLEAR";
         }
+        document.getElementById('pHPFill').style.width = (pData.stats?.hp / (pData.stats?.maxHp || 100)) * 100 + "%";
+        document.getElementById('pMPFill').style.width = (pData.stats?.mana / (pData.stats?.maxMana || 50)) * 100 + "%";
+        document.getElementById('hpCount').innerText = (pData.inventory || []).filter(i => i.id === "7").length;
+        document.getElementById('mpCount').innerText = (pData.inventory || []).filter(i => i.id === "8").length;
     }
 
-    async function syncPlayerRetreat() {
-        if (!auth.currentUser) return;
-        await updateDoc(doc(db, "players", auth.currentUser.uid), { "stats.hp": 1 });
-        window.location.href = "map.html";
+    function triggerShake(id, permanent) {
+        const el = document.getElementById(id);
+        if (el) { el.classList.add('shake'); if(!permanent) setTimeout(() => el.classList.remove('shake'), 200); }
     }
 
-    window.spawnMonster = function() {
-        if (!pData || isTurnProcessing) return;
-        isProcessingVictory = false;
-        isTurnProcessing = false;
-        document.getElementById('log').innerHTML = ""; 
-        const roll = Math.random() * 100;
-        let offset = (roll <= 60) ? 0 : (roll <= 90 ? 1 : -1); 
-        let mLevel = Math.max(1, pData.level + offset);
-        let bestiaryIndex = Math.min(bestiary.length - 1, mLevel - 1); 
-        let template = bestiary[bestiaryIndex];
-        
-        currentMonster = { 
-            ...template, 
-            level: mLevel, 
-            curHp: template.hp
-        };
-        updateUI();
-        addLog(`A Level ${mLevel} ${template.name} appeared.`, "#eee");
-    };
-
-    async function grantRewards() {
-        if(isProcessingVictory) return;
-        isProcessingVictory = true;
-        isTurnProcessing = false;
-        const xpGained = 25 + (currentMonster.level * 10);
-        const goldGained = 15 + (currentMonster.level * 5);
-        pData.xp += xpGained;
-        pData.gold += goldGained;
-        addLog(`Victory! +${xpGained} XP | +${goldGained} Gold`, "#ccff00");
-        
-        const req = (pData.level + 1) * 100;
-        if (pData.xp >= req) {
-            pData.level += 1;
-            pData.xp -= req;
-            // --- SOVEREIGN GROWTH STATS ---
-            pData.stats.maxHp += 50; 
-            pData.stats.hp = pData.stats.maxHp;
-            pData.stats.atk += 8;
-            pData.stats.def += 4;
-            addLog(`✨ SOVEREIGN ASCENSION! Level ${pData.level}!`, "#fffb00");
-        }
-        updateUI();
-        await syncPlayer();
+    async function sync() { if (auth.currentUser) await updateDoc(doc(db, "players", auth.currentUser.uid), pData); }
+    function addLog(msg, color) {
+        const l = document.getElementById('log');
+        if (!l) return;
+        l.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+        l.scrollTop = l.scrollHeight;
     }
-
-    async function syncPlayer() {
-        if (!auth.currentUser) return;
-        await updateDoc(doc(db, "players", auth.currentUser.uid), { 
-            xp: pData.xp, gold: pData.gold, level: pData.level, stats: pData.stats, inventory: pData.inventory, skills: pData.skills
-        });
-    }
-
-    window.usePotion = async function(type) {
-        if (isTurnProcessing || isProcessingVictory || currentMonster.curHp <= 0) return;
-        const index = pData.inventory.findIndex(item => (typeof item === 'string' ? item : item.name) === type);
-        if (index === -1) return addLog(`No ${type}s!`, "#ff4444");
-        isTurnProcessing = true; 
-        pData.inventory.splice(index, 1); 
-        if (type === "Health Tonic") {
-            pData.stats.hp = Math.min(pData.stats.maxHp, pData.stats.hp + 50);
-            addLog("Consumed Health Tonic. +50 HP", "#5eead4");
-        } else if (type === "Mana Core") {
-            pData.stats.mana = Math.min(pData.stats.maxMana, pData.stats.mana + 30);
-            addLog("Consumed Mana Core. +30 MP", "#22ccff");
-        }
-        updateUI();
-        await syncPlayer();
-        setTimeout(monsterTurn, 600);
-    };
-
-    function addLog(msg, color = "#666") {
-        const log = document.getElementById('log');
-        log.innerHTML += `<div class="log-entry" style="color:${color}">${msg}</div>`;
-        log.scrollTop = log.scrollHeight;
-    }
-
-    // --- ADMIN FUNCTIONS ---
-    let resetCounter = 0;
-    document.getElementById('resetTrigger').onclick = () => { 
-        if (++resetCounter >= 5) { toggleAdmin(); resetCounter = 0; } 
-    };
-
-    window.toggleAdmin = function() {
-        const panel = document.getElementById('adminPanel');
-        const isOpening = panel.style.display !== 'flex';
-        panel.style.display = isOpening ? 'flex' : 'none';
-        if(isOpening) refreshAdminStats();
-    };
-
-    function refreshAdminStats() {
-        if (!pData) return;
-        const overview = document.getElementById('adminVesselStats');
-        overview.innerHTML = `
-            <div class="stat-line"><span>SOVEREIGN LVL:</span> <span>${pData.level}</span></div>
-            <div class="stat-line"><span>INTEGRITY (HP):</span> <span>${pData.stats.maxHp}</span></div>
-            <div class="stat-line"><span>OFFENSE (ATK):</span> <span>${pData.stats.atk}</span></div>
-            <div class="stat-line"><span>RESILIENCE (DEF):</span> <span>${pData.stats.def}</span></div>
-        `;
-    }
-
-    function renderAdminSpawner() {
-        const grid = document.getElementById('adminSpawnGrid');
-        if (grid.children.length > 0) return; 
-        bestiary.forEach((m, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'spawn-btn';
-            btn.innerHTML = `<span>${m.emoji} ${m.name}</span><span class="lvl-tag">TIER ${index + 1}</span>`;
-            btn.onclick = () => window.adminSpawnSpecific(index);
-            grid.appendChild(btn);
-        });
-    }
-
-    window.adminFullRestore = async function() {
-        if (!pData) return;
-        pData.stats.hp = pData.stats.maxHp;
-        pData.stats.mana = pData.stats.maxMana;
-        updateUI();
-        refreshAdminStats();
-        await syncPlayer();
-    };
-
-    window.adminSpawnSpecific = function(index) {
-        if (!pData) return;
-        isProcessingVictory = false;
-        isTurnProcessing = false;
-        document.getElementById('log').innerHTML = ""; 
-        let template = bestiary[index];
-        currentMonster = { ...template, level: index + 1, curHp: template.hp };
-        updateUI();
-        toggleAdmin(); 
-    };
-
-    window.modifyLevel = async function(amount) {
-        if (!pData) return;
-        let newLvl = Math.max(1, pData.level + amount);
-        pData.level = newLvl;
-        pData.xp = 0; 
-        pData.stats.maxHp = 100 + (newLvl - 1) * 50;
-        pData.stats.hp = pData.stats.maxHp;
-        pData.stats.atk = 10 + (newLvl - 1) * 8;
-        pData.stats.def = 5 + (newLvl - 1) * 4;
-        updateUI();
-        refreshAdminStats();
-        await syncPlayer();
-    };
-
-    window.modifyGold = async function(amount) {
-        if (!pData) return;
-        pData.gold = Math.max(0, pData.gold + amount);
-        updateUI();
-        await syncPlayer();
-    };
-
-    window.confirmHardReset = async function() {
-        if (confirm("Wipe all progress?")) {
-            const playerRef = doc(db, "players", auth.currentUser.uid);
-            await updateDoc(playerRef, { 
-                level: 1, xp: 0, gold: 0, inventory: [], 
-                "stats.hp": 100, "stats.maxHp": 100, "stats.mana": 50, "stats.maxMana": 50, "stats.atk": 10, "stats.def": 5 
-            });
-            location.reload();
-        }
-    };
 </script>
 </body>
 </html>

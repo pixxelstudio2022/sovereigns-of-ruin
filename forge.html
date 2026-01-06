@@ -5,65 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Soul Forge - Sovereigns of Ruin</title>
     <style>
+        :root { --accent: #ff8800; --teal: #5eead4; }
         body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
-        .scene { width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; display: flex; flex-direction: column; background: #000; transition: filter 0.3s; }
         
-        /* Hammer Strike Animation */
+        .game-window { 
+            width: 400px; height: 100dvh; position: relative; border-left: 1px solid #111; border-right: 1px solid #111; 
+            display: flex; flex-direction: column; background: #000; 
+        }
+
         .shake { animation: strike 0.15s ease-in-out infinite; }
         @keyframes strike {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(3px) scale(1.01); }
-            100% { transform: translateY(0); }
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(1px, 2px); }
+            100% { transform: translate(0, 0); }
         }
 
         .forge-header { padding: 15px; border-bottom: 1px solid #221100; display: flex; justify-content: space-between; align-items: center; background: #050505; }
-        .back-btn { color: #ff8800; text-decoration: none; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px; }
+        .back-btn { color: var(--accent); text-decoration: none; font-size: 0.65rem; font-weight: bold; letter-spacing: 1px; }
         .currency { color: #ccff00; font-family: monospace; font-size: 0.8rem; font-weight: bold; }
         
-        .forge-banner { height: 120px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #221100 0%, #000 100%); border-bottom: 1px solid #1a0f00; }
-        .forge-banner h1 { margin: 0; font-size: 1.1rem; letter-spacing: 4px; color: #ff8800; text-shadow: 0 0 10px #ff4400; text-transform: uppercase; }
-        
-        #pContainer { width: 70%; height: 4px; background: #111; margin-top: 15px; display: none; overflow: hidden; border-radius: 2px; border: 1px solid #331100; }
-        #pBar { width: 0%; height: 100%; background: #ff8800; transition: width 3s linear; box-shadow: 0 0 15px #ff8800; }
+        .forge-banner { height: 140px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, #221100 0%, #000 100%); border-bottom: 1px solid #1a0f00; position: relative; }
+        .forge-banner h1 { margin: 0; font-size: 1rem; letter-spacing: 4px; color: var(--accent); text-shadow: 0 0 10px #ff4400; text-transform: uppercase; }
+        .forge-banner p { font-size: 0.55rem; color: #666; letter-spacing: 1px; margin-top: 5px; }
 
-        .inventory-list { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .item-card { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 15px; }
-        
-        .item-icon { font-size: 1.6rem; background: #111; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; }
+        #pContainer { width: 70%; height: 3px; background: #111; margin-top: 15px; display: none; overflow: hidden; border-radius: 2px; }
+        #pBar { width: 0%; height: 100%; background: var(--accent); transition: width 3s linear; box-shadow: 0 0 10px var(--accent); }
+
+        .inventory-list { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .item-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+        .item-icon { font-size: 1.4rem; background: #111; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: 1px solid #222; }
         .item-info { flex: 1; }
-        .item-name { font-size: 0.75rem; font-weight: bold; color: #fff; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
-        .stat-main { font-size: 0.65rem; color: #5eead4; font-family: monospace; }
-        .stat-next { font-size: 0.6rem; color: #777; margin-top: 2px; }
-        .lvl-tag { font-size: 0.55rem; color: #ff8800; font-weight: bold; margin-top: 6px; display: block; letter-spacing: 1px; }
+        .item-name { font-size: 0.7rem; font-weight: bold; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-line { font-size: 0.6rem; color: var(--teal); font-family: monospace; margin-top: 2px; }
+        .success-rate { font-size: 0.55rem; color: #777; margin-top: 4px; }
 
-        .refine-btn { background: #1a0f00; border: 1px solid #ff8800; color: #ff8800; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 0.65rem; font-weight: 900; text-align: center; }
-        .refine-btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
+        .refine-btn { background: #1a0f00; border: 1px solid var(--accent); color: var(--accent); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.6rem; font-weight: bold; line-height: 1.2; text-align: center; min-width: 80px; }
+        .refine-btn:disabled { opacity: 0.2; cursor: not-allowed; border-color: #333; color: #444; }
 
-        .log-display { height: 70px; padding: 0 20px; font-size: 0.6rem; color: #666; background: #050505; border-top: 1px solid #111; display: flex; align-items: center; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
+        .forge-log { height: 60px; padding: 0 20px; font-size: 0.55rem; color: #444; background: #050505; border-top: 1px solid #111; display: flex; align-items: center; justify-content: center; font-family: monospace; text-align: center; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div class="scene" id="mainScene">
+    <div class="game-window" id="mainScene">
         <div class="forge-header">
-            <a href="map.html" class="back-btn">← VILLAGE MAP</a>
-            <div class="currency" id="goldDisplay">--- GOLD</div>
+            <a href="map.html" class="back-btn">← RETURN TO MAP</a>
+            <div class="currency" id="goldDisplay">--- G</div>
         </div>
 
         <div class="forge-banner">
             <h1>THE SOUL FORGE</h1>
+            <p>Heirloom Refinement & Bonding</p>
             <div id="pContainer"><div id="pBar"></div></div>
         </div>
 
         <div class="inventory-list" id="forgeList"></div>
-        <div class="log-display" id="forgeLog">Select a weapon or armor to refine...</div>
+
+        <div class="forge-log" id="forgeLog">Select gear to imbue with power</div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { initSecurity } from "./auth-guard.js";
+        
+        import { SYSTEM_CONFIG } from "./system.js";
+        import { ITEM_LIBRARY } from "./items.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
@@ -71,12 +79,13 @@
             projectId: "sovereigns-of-ruin", 
             appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" 
         };
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         let pData = null;
-        let activeProcess = false;
+        let isProcessing = false;
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -84,136 +93,136 @@
                 onSnapshot(doc(db, "players", user.uid), (snap) => {
                     if (snap.exists()) {
                         pData = snap.data();
-                        if (!activeProcess) renderForge();
+                        if (!isProcessing) renderForge();
                     }
                 });
             } else { window.location.href = "index.html"; }
         });
 
-        function getSuccessRate(currentRefine) {
-            if (currentRefine < 10) return 100;
-            if (currentRefine < 30) return 90;
-            if (currentRefine < 60) return 75;
-            if (currentRefine < 85) return 50;
-            return 25;
+        function getSuccessChance(level) {
+            if (level < 5) return 100;
+            if (level < 10) return 80;
+            if (level < 15) return 60;
+            return 40;
         }
 
         function renderForge() {
-            document.getElementById('goldDisplay').innerText = `${pData.gold || 0} GOLD`;
+            document.getElementById('goldDisplay').innerText = `${pData.gold || 0} G`;
             const list = document.getElementById('forgeList');
             list.innerHTML = "";
 
-            const pLevel = pData.level || 1;
-            const items = (pData.inventory || []).filter(i => 
-                ['weapon', 'armor', 'helm', 'legendary'].includes(i.type)
+            const gear = (pData.inventory || []).filter(item => 
+                ['weapon', 'armor', 'helm'].includes(item.type)
             );
 
-            if (items.length === 0) {
-                list.innerHTML = `<div style="text-align:center; color:#444; margin-top:50px; font-size:0.6rem; letter-spacing:2px;">INVENTORY VOID OF GEAR</div>`;
+            if (gear.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#333; margin-top:40px; font-size:0.6rem;">NO REFINEABLE GEAR FOUND</div>`;
                 return;
             }
 
-            items.forEach(item => {
-                const sType = item.statType || (item.type === 'weapon' ? 'atk' : 'def');
-                const curVal = item[sType] || 0;
-                const level = item.refineLevel || 0;
+            gear.forEach(item => {
+                const curLv = item.refineLevel || 0;
+                const statKey = item.atk ? 'atk' : 'def';
+                const curStat = item[statKey] || 0;
                 
-                const isMaxedForLevel = level >= pLevel;
-                const successRate = getSuccessRate(level);
-                const rateColor = successRate > 80 ? '#ccff00' : (successRate > 50 ? '#ff8800' : '#ff4444');
-                
-                const nextVal = Math.max(Math.floor(curVal * 1.15), curVal + 2); 
-                const cost = (level + 1) * 150;
+                const cost = (curLv + 1) * 250;
+                // RULE FIXED: Cannot exceed player level
+                const isMaxed = curLv >= pData.level; 
+                const chance = getSuccessChance(curLv);
 
                 const card = document.createElement('div');
                 card.className = "item-card";
                 card.innerHTML = `
                     <div class="item-icon">${item.emoji || '⚔️'}</div>
                     <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="stat-main">CURRENT: +${curVal} ${sType.toUpperCase()}</div>
-                        ${!isMaxedForLevel ? 
-                            `<div class="stat-next">SUCCESS: <b style="color:${rateColor}">${successRate}%</b></div>` : 
-                            `<div class="stat-next" style="color:#ff4444;">LIMIT REACHED (LVL ${pLevel})</div>`
-                        }
-                        <span class="lvl-tag">REFINEMENT +${level} / ${pLevel}</span>
+                        <div class="item-name">${item.name} +${curLv}</div>
+                        <div class="stat-line">${statKey.toUpperCase()}: ${curStat}</div>
+                        <div class="success-rate">${isMaxed ? 'LEVEL CAP REACHED' : `CHANCE: ${chance}%`}</div>
                     </div>
                     <button class="refine-btn" 
-                        ${(pData.gold < cost || isMaxedForLevel) ? 'disabled' : ''} 
-                        onclick="window.runRefinement('${item.uid}', ${cost}, ${nextVal}, '${sType}', ${successRate})">
-                        ${isMaxedForLevel ? 'MAXED' : `REFINE<br>${cost}G`}
+                        ${(pData.gold < cost || isMaxed) ? 'disabled' : ''} 
+                        onclick="window.startRefine('${item.uid}', ${cost}, ${chance}, '${statKey}')">
+                        ${isMaxed ? 'LVL TOO LOW' : `REFINE<br>${cost}G`}
                     </button>
                 `;
                 list.appendChild(card);
             });
         }
 
-        window.runRefinement = async (uid, cost, nextVal, statKey, successRate) => {
-            if (activeProcess) return;
-            activeProcess = true;
+        window.startRefine = async (uid, cost, chance, statKey) => {
+            if (isProcessing) return;
+            isProcessing = true;
 
-            const roll = Math.random() * 100;
-            const isSuccess = roll <= successRate;
+            const log = document.getElementById('forgeLog');
+            const progress = document.getElementById('pContainer');
+            const bar = document.getElementById('pBar');
+            const scene = document.getElementById('mainScene');
 
-            document.querySelectorAll('.refine-btn').forEach(b => b.disabled = true);
-            document.getElementById('pContainer').style.display = "block";
-            const pBar = document.getElementById('pBar');
-            pBar.style.width = "0%";
-            void pBar.offsetWidth; 
-            pBar.style.width = "100%";
-            
-            document.getElementById('mainScene').classList.add('shake');
-            setLog(`STRIKING THE ANVIL... (${successRate}% CHANCE)`);
+            log.innerText = "Channelling Soul Essence...";
+            log.style.color = "var(--accent)";
+            progress.style.display = "block";
+            bar.style.width = "0%";
+            setTimeout(() => bar.style.width = "100%", 50);
+            scene.classList.add('shake');
 
             await new Promise(r => setTimeout(r, 3000));
 
             try {
                 const playerRef = doc(db, "players", auth.currentUser.uid);
-                const snap = await getDoc(playerRef);
-                const latest = snap.data();
+                const roll = Math.random() * 100;
+                const success = roll <= chance;
 
-                if (latest.gold < cost) throw "GOLD DEPLETED";
+                await runTransaction(db, async (transaction) => {
+                    const snap = await transaction.get(playerRef);
+                    const data = snap.data();
+                    
+                    const targetItem = data.inventory.find(i => i.uid === uid);
+                    if (!targetItem) throw "Item not found";
+                    
+                    // Transaction-level safety check
+                    if ((targetItem.refineLevel || 0) >= data.level) throw "Level cap reached";
+                    if (data.gold < cost) throw "Insufficient gold";
 
-                let updatePayload = { gold: latest.gold - cost };
-
-                if (isSuccess) {
-                    updatePayload.inventory = latest.inventory.map(item => {
-                        if (item.uid === uid) {
+                    const updatedInv = data.inventory.map(item => {
+                        if (item.uid === uid && success) {
                             return {
                                 ...item,
                                 refineLevel: (item.refineLevel || 0) + 1,
-                                [statKey]: nextVal 
+                                [statKey]: Math.floor(item[statKey] * 1.1) + 2
                             };
                         }
                         return item;
                     });
-                    setLog("SUCCESS! THE ITEM VIBRATES WITH NEW POWER.");
-                    document.getElementById('forgeLog').style.color = "#ccff00";
-                } else {
-                    setLog("FORGE FAILED! THE METAL REJECTED THE ESSENCE.");
-                    document.getElementById('forgeLog').style.color = "#ff4444";
-                }
 
-                await updateDoc(playerRef, updatePayload);
-                
-            } catch (e) {
-                setLog("ERROR: " + e);
+                    const updatedGear = { ...data.gear };
+                    Object.keys(updatedGear).forEach(slot => {
+                        if (updatedGear[slot] && updatedGear[slot].uid === uid && success) {
+                            updatedGear[slot] = updatedInv.find(i => i.uid === uid);
+                        }
+                    });
+
+                    transaction.update(playerRef, {
+                        gold: data.gold - cost,
+                        inventory: updatedInv,
+                        gear: updatedGear
+                    });
+                });
+
+                log.innerText = success ? "SUCCESS! THE SOUL BONDS DEEPEN." : "THE ESSENCE FAILED TO COALESCE...";
+                log.style.color = success ? "#ccff00" : "#ff4444";
+
+            } catch (err) {
+                log.innerText = "FORGE ERROR: " + err;
+                log.style.color = "#ff4444";
             }
 
-            activeProcess = false;
             setTimeout(() => {
-                pBar.style.width = "0%";
-                document.getElementById('pContainer').style.display = "none";
-                document.getElementById('mainScene').classList.remove('shake');
+                isProcessing = false;
+                scene.classList.remove('shake');
+                progress.style.display = "none";
                 renderForge();
-            }, 1000);
+            }, 1500);
         };
-
-        function setLog(m) {
-            const log = document.getElementById('forgeLog');
-            log.innerText = m;
-            log.style.color = "#ff8800";
-        }
     </script>
 </body>
 </html>

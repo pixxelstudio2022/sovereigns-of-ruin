@@ -6,7 +6,7 @@
     <title>Login - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { background: #000; margin: 0; font-family: 'Inter', sans-serif; }
+        body { background: #000; margin: 0; font-family: 'Inter', sans-serif; display: flex; justify-content: center; }
         .login-card {
             background: #0a0a0a;
             border: 1px solid #1a1a1a;
@@ -44,6 +44,7 @@
             transition: 0.2s;
         }
         .primary-btn:hover { background: #4ee6c8; }
+        .primary-btn:disabled { background: #222; color: #555; cursor: not-allowed; }
         .secondary-btn {
             background: none;
             border: 1px solid #333;
@@ -55,7 +56,7 @@
     </style>
 </head>
 <body>
-    <div class="game-container" style="width: 400px; margin: 0 auto;">
+    <div class="game-container" style="width: 400px; min-height: 100vh; position: relative; background: #050505;">
         <div class="login-card">
             <h2 style="letter-spacing: 4px; color: #62ffe1; margin-bottom: 20px;">SOVEREIGNS <br>OF RUIN</h2>
             
@@ -96,7 +97,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 1. Auto-Redirect Logic
+        // 1. Auto-Redirect Logic (Handles your "resume session" rule)
         onAuthStateChanged(auth, async (user) => {
             if (user && user.emailVerified) {
                 const playerRef = doc(db, "players", user.uid);
@@ -106,10 +107,10 @@
                     const data = snap.data();
                     const localSid = localStorage.getItem('currentSessionId');
                     
-                    // Only auto-redirect if the browser session matches the DB session
+                    // If authenticated and session matches, skip login
                     if (data.activeSessionId === localSid) {
-                        // Check if player has already finished selection (element or origin)
-                        const hasFinishedSetup = data.element || data.origin;
+                        // Resumes session based on birth selection status
+                        const hasFinishedSetup = data.origin && data.origin !== "";
                         window.location.href = hasFinishedSetup ? "map.html" : "selection.html";
                     }
                 }
@@ -118,6 +119,7 @@
 
         // 2. Login Handler
         document.getElementById('btnLogin').onclick = async () => {
+            const btn = document.getElementById('btnLogin');
             const email = document.getElementById('loginEmail').value.trim();
             const pass = document.getElementById('loginPass').value;
             const errBox = document.getElementById('errorBox');
@@ -129,7 +131,10 @@
             }
 
             try {
-                // Set persistence to session (clears when tab closes)
+                btn.disabled = true;
+                btn.innerText = "Connecting...";
+                
+                // Keep session active for the browser tab
                 await setPersistence(auth, browserSessionPersistence);
 
                 const userCredential = await signInWithEmailAndPassword(auth, email, pass);
@@ -138,32 +143,36 @@
                 if (!user.emailVerified) {
                     errBox.innerText = "Soul unverified. Check your email for the link.";
                     errBox.style.display = "block";
+                    btn.disabled = false;
+                    btn.innerText = "Enter the Ruin";
                     await signOut(auth);
                     return;
                 }
 
-                // Create a unique Session ID for security monitoring
+                // Security: Create unique session ID
                 const newSessionId = "SID_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
                 localStorage.setItem('currentSessionId', newSessionId);
 
                 const playerRef = doc(db, "players", user.uid);
                 
-                // Record the login session
+                // Update online status and set the session
                 await updateDoc(playerRef, {
                     isOnline: true, 
                     lastActive: Date.now(),
                     activeSessionId: newSessionId
                 });
 
-                // Check player status to decide destination
                 const snap = await getDoc(playerRef);
                 if (snap.exists()) {
                     const data = snap.data();
-                    const hasFinishedSetup = data.element || data.origin;
+                    // One-time selection logic: if origin exists, they can never change it
+                    const hasFinishedSetup = data.origin && data.origin !== "";
                     window.location.href = hasFinishedSetup ? "map.html" : "selection.html";
                 }
 
             } catch (error) {
+                btn.disabled = false;
+                btn.innerText = "Enter the Ruin";
                 console.error("Auth Error:", error.code);
                 errBox.style.display = "block";
                 

@@ -97,7 +97,6 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         
-        // --- 1. IMPORT THE LIBRARY ---
         import { ITEM_LIBRARY } from "./items.js";
 
         const firebaseConfig = {
@@ -117,8 +116,7 @@
         let userUID = null;
         let isProcessing = false;
 
-        // --- 2. MAP ELEMENTS TO LIBRARY IDs ---
-        // We use these IDs so the system can look up stats in items.js
+        // Map Selection to Library Skill IDs
         const starterSkillIDs = {
             "Fire": "start_fire", 
             "Water": "start_water", 
@@ -134,12 +132,15 @@
                 const docRef = doc(db, "players", userUID);
                 const docSnap = await getDoc(docRef);
 
-                // Permanent Check [cite: 2026-01-01]
-                if (docSnap.exists() && docSnap.data().element) {
-                    window.location.href = "map.html";
-                } else {
-                    document.getElementById('loadingOverlay').style.display = 'none';
+                // Permanent Redirect Rule: If element/origin is already set, skip this page
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.element && data.element !== "") {
+                        window.location.href = "map.html";
+                        return;
+                    }
                 }
+                document.getElementById('loadingOverlay').style.display = 'none';
             } else {
                 window.location.href = "index.html";
             }
@@ -163,21 +164,25 @@
             btn.disabled = true;
             btn.innerText = "BINDING SOUL...";
             
-            const newSessionId = Math.random().toString(36).substring(7);
+            const newSessionId = "SID_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
             localStorage.setItem('currentSessionId', newSessionId);
 
             try {
-                // --- 3. GET THE SKILL ID FROM OUR MAP ---
                 const skillId = starterSkillIDs[chosenElement];
 
                 await updateDoc(doc(db, "players", userUID), {
                     element: chosenElement,
+                    origin: chosenElement, // Syncing origin with element for choice-locking
                     activeSessionId: newSessionId,
-                    // Now saving the ID instead of the Name
-                    skills: [skillId, null, null, null], 
-                    trainingLevels: { maxHp: 0, maxMana: 0 },
+                    skills: [skillId, "", "", ""], // Consistent empty strings
+                    trainingLevels: { hp: 0, mana: 0, atk: 0, def: 0 },
+                    equipment: {
+                        weapon: "",
+                        armor: "",
+                        accessory: ""
+                    },
                     level: 1,
-                    gold: 100 // Giving them some starting gold to use at the Exchange
+                    gold: 100 
                 });
 
                 window.location.href = "map.html";

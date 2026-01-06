@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Forge Identity - Sovereigns of Ruin</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        body { background: #000; margin: 0; font-family: 'Inter', sans-serif; display: flex; justify-content: center; }
         .auth-card {
             background: #0a0a0a;
             border: 1px solid #1a1a1a;
             padding: 30px;
             border-radius: 8px;
             width: 320px;
-            margin: auto;
+            margin: 50px auto;
             text-align: center;
         }
         input {
@@ -39,6 +40,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        .primary-btn:disabled { background: #222; color: #555; }
         .error-msg { color: #ff4444; font-size: 0.75rem; margin-top: 10px; display: none; min-height: 1.2em; }
         .success-box { display: none; }
         .success-box p { font-size: 0.85rem; line-height: 1.6; color: #ccc; }
@@ -48,7 +50,7 @@
     </style>
 </head>
 <body>
-    <div class="game-container" style="width: 400px; margin: 0 auto;">
+    <div class="game-container" style="width: 400px; min-height: 100vh; background: #050505;">
         <div class="auth-card" id="regForm">
             <h2 style="letter-spacing: 2px; color: #62ffe1; text-transform: uppercase;">Forge Identity</h2>
             
@@ -90,6 +92,7 @@
         const db = getFirestore(app);
 
         document.getElementById('submitReg').onclick = async () => {
+            const btn = document.getElementById('submitReg');
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const pass = document.getElementById('regPass').value;
@@ -112,12 +115,18 @@
             }
 
             try {
+                btn.disabled = true;
+                btn.innerText = "Forging...";
+
                 // 2. Username Uniqueness Check
                 const nameRef = doc(db, "usernames", name.toLowerCase());
                 const nameSnap = await getDoc(nameRef);
                 if (nameSnap.exists()) {
                     errBox.innerText = "This name is already claimed.";
-                    errBox.style.display = "block"; return;
+                    errBox.style.display = "block"; 
+                    btn.disabled = false;
+                    btn.innerText = "Begin Authentication";
+                    return;
                 }
 
                 // 3. Create Auth User
@@ -130,24 +139,44 @@
                 // Reserve the username
                 await setDoc(nameRef, { uid: user.uid });
 
-                // Create the Player Doc
-                // LEVEL SET TO 0: New players start as unranked vessels
+                // INITIALIZE PLAYER DOCUMENT (CRITICAL FIXES HERE)
                 await setDoc(doc(db, "players", user.uid), {
+                    uid: user.uid,
                     name: name,
-                    element: null, 
-                    level: 0, 
-                    xp: 0,
+                    origin: "", // Empty string instead of null for consistency
+                    element: "",
+                    level: 1, // Start at Level 1 for better logic flow
+                    exp: 0,
                     gold: 0,
                     shards: 0,
                     dailyGoldCount: 0,
                     lastGoldDate: new Date().toDateString(),
-                    stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50 }
+                    // Critical structural arrays
+                    inventory: [],
+                    skills: [], 
+                    equipment: {
+                        weapon: null,
+                        armor: null,
+                        accessory: null
+                    },
+                    // Combat Stats
+                    stats: { 
+                        hp: 100, 
+                        maxHp: 100, 
+                        mana: 50, 
+                        maxMana: 50,
+                        atk: 10,
+                        def: 5,
+                        luck: 1
+                    },
+                    isOnline: false,
+                    lastActive: Date.now()
                 });
 
                 // 5. Email Verification
                 await sendEmailVerification(user);
 
-                // 6. Sign out immediately to prevent auto-redirect by other page listeners
+                // 6. Sign out
                 await signOut(auth); 
 
                 // 7. Show Success View
@@ -155,6 +184,8 @@
                 document.getElementById('successBox').style.display = 'block';
 
             } catch (error) {
+                btn.disabled = false;
+                btn.innerText = "Begin Authentication";
                 console.error("Registration failed:", error);
                 errBox.innerText = error.message;
                 errBox.style.display = "block";

@@ -150,7 +150,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { initSecurity } from "./auth-guard.js";
     import { MONSTER_DATABASE } from "./monsters.js";
     import { ITEM_LIBRARY } from "./items.js"; 
@@ -178,79 +178,67 @@
         });
     });
 
-    // --- GOD MENU LOGIC ---
-    window.godTrigger = function() {
-        if(auth.currentUser?.uid !== ADMIN_UID) return;
-        godClicks++;
-        if(godClicks >= 5) {
-            document.getElementById('godMenu').style.display = 'block';
-            refreshGodMenu();
-            godClicks = 0;
-        }
-    };
-
-    window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
-
-    function refreshGodMenu() {
-        if(!pData) return;
-        let gearAtk = 0, gearDef = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) { gearAtk += (i.atk || 0); gearDef += (i.def || 0); }});
-        
-        document.getElementById('g-hp-mp').innerText = `HP: ${pData.stats.hp}/${pData.stats.maxHp} | MP: ${pData.stats.mana}/${pData.stats.maxMana}`;
-        document.getElementById('g-base').innerText = `Base Atk: ${pData.stats.atk} | Def: ${pData.stats.def}`;
-        document.getElementById('g-gear').innerText = `Gear Boost: +${gearAtk} Atk | +${gearDef} Def`;
-        
-        // Use 'skills' field from DB
-        const skillList = (pData.skills || []).map(s => `[${s}]`).join("<br>");
-        document.getElementById('g-spells').innerHTML = skillList || "No skills found";
-    }
-
-    window.godRestore = async () => {
-        pData.stats.hp = pData.stats.maxHp;
-        pData.stats.mana = pData.stats.maxMana;
-        await sync();
-    };
-
-    window.godGold = async (val) => {
-        pData.gold = Math.max(0, (pData.gold || 0) + val);
-        await sync();
-    };
-
-    window.godLevel = async (val) => {
-        pData.level = Math.max(1, (pData.level || 1) + val);
-        await sync();
-    };
-
-    window.godReset = async () => {
-        if(!confirm("HARD RESET: Clear items, training, gold, and extra skills?")) return;
-        pData.gold = 0;
-        pData.exp = 0;
-        pData.level = 1;
-        pData.inventory = [];
-        pData.training = { str: 0, agi: 0, int: 0 };
-        pData.stats = { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 5, luck: 0 };
-        
-        // Fix: Use skills field
-        if(pData.skills && pData.skills.length > 0) pData.skills = [pData.skills[0]];
-        
-        await sync();
-        location.reload();
-    };
-
-    // --- BATTLE LOGIC ---
+    // --- NEW WEIGHTED SPAWN LOGIC ---
     window.attemptSpawn = function() {
         if (!pData || isBusy || monster) return;
         document.getElementById('log').innerHTML = "";
+        
+        const playerLvl = pData.level || 1;
         const zonePool = Object.values(MONSTER_DATABASE["THRESHOLD_OF_SOULS"]);
-        const selected = zonePool[Math.floor(Math.random() * zonePool.length)];
+        
+        // 1. Determine the "Allowed Level Difference" based on dice roll
+        const rng = Math.random() * 100; // 0 to 99.9
+        let allowedDiff = 1; // Default: +/- 1 level
+
+        if (rng < 10) allowedDiff = 5;      // 10% chance for +/- 5
+        else if (rng < 30) allowedDiff = 4; // 20% chance for +/- 4 (10 + 20)
+        else if (rng < 70) allowedDiff = 3; // 40% chance for +/- 3 (30 + 40)
+        else allowedDiff = 1;               // Remaining 30% are 100% chance for +/- 1
+
+        // 2. Filter pool based on that difference
+        let filteredPool = zonePool.filter(m => Math.abs(m.level - playerLvl) <= allowedDiff);
+
+        // Fallback: If no monsters exist in that specific range, just grab the closest ones
+        if (filteredPool.length === 0) {
+            filteredPool = zonePool.sort((a, b) => Math.abs(a.level - playerLvl) - Math.abs(b.level - playerLvl)).slice(0, 3);
+        }
+
+        const selected = filteredPool[Math.floor(Math.random() * filteredPool.length)];
+        
         if (selected) {
             monster = JSON.parse(JSON.stringify(selected)); 
             monster.curHp = monster.hp;
-            addLog(`Manifested ${monster.name}!`, "#eee");
+            addLog(`Manifested ${monster.name}! (Level ${monster.level})`, "#eee");
         }
         updateUI();
     };
 
+    // --- QUEST PROGRESS TRACKER ---
+    async function trackQuestKill(monsterName) {
+        if (!pData.activeQuest || pData.activeQuest.isCompleted) return;
+        
+        const active = pData.activeQuest;
+        const playerRef = doc(db, "players", auth.currentUser.uid);
+
+        // Logic for specific target OR "ANY" in this map
+        const isTargetMatch = active.target === monsterName;
+        const isAnyMatch = active.target === "ANY" && active.locationId === "threshold_of_souls";
+
+        if (isTargetMatch || isAnyMatch) {
+            const newProgress = active.progress + 1;
+            const isDone = newProgress >= active.goalAmount;
+
+            await updateDoc(playerRef, {
+                "activeQuest.progress": newProgress,
+                "activeQuest.isCompleted": isDone
+            });
+
+            addLog(`Quest Progress: ${newProgress}/${active.goalAmount}`, "var(--gold)");
+            if(isDone) addLog("Bounty ready for turn-in!", "var(--gold)");
+        }
+    }
+
+    // --- COMBAT ACTIONS ---
     window.attack = function() {
         if (!monster || isBusy) return;
         isBusy = true;
@@ -269,25 +257,18 @@
     };
 
     window.useSkill = async function() {
-        // Fix: Use skills array
         if (!monster || isBusy || !pData.skills || pData.skills.length === 0) return;
-        
         const spellName = pData.skills[0];
-        const manaCost = 15; // Default cost for Soul Strike
-
-        if (pData.stats.mana < manaCost) {
-            addLog("Not enough MP!", "var(--mana)");
-            return;
-        }
+        const manaCost = 15; 
+        if (pData.stats.mana < manaCost) { addLog("Not enough MP!", "var(--mana)"); return; }
 
         isBusy = true;
         pData.stats.mana -= manaCost;
-        
         let gearAtk = 0;
         (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
         
         const baseAtk = (pData.stats?.atk || 10) + gearAtk;
-        const spellDmg = Math.floor(baseAtk * 1.8); // 1.8x multiplier for Soul Strike
+        const spellDmg = Math.floor(baseAtk * 1.8);
         const result = calculateCombatResult(spellDmg, monster.def, (pData.stats?.luck || 0) + 5);
         
         addLog(`Cast ${spellName}!`, "var(--mana)");
@@ -297,10 +278,8 @@
             addLog(`${spellName} deals ${result.damage} DMG.`, "var(--teal)");
             triggerShake('mSprite', false);
         }
-
         if (monster.curHp <= 0) setTimeout(handleVictory, 400);
         else setTimeout(monsterTurn, 600);
-        
         updateUI();
         await sync();
     };
@@ -321,46 +300,48 @@
         else { sync(); updateUI(); }
     }
 
-    function handleDeath() {
-        isBusy = true;
-        const overlay = document.getElementById('deathOverlay');
-        overlay.style.display = 'flex';
-        setTimeout(() => { window.location.href = "map.html"; }, 5000);
-        sync();
-    }
-
     async function handleVictory() {
+        const mName = monster.name;
         addLog(`Victory! +${monster.xp} XP`, "var(--gold)");
+        
         pData.exp = (pData.exp || 0) + monster.xp;
         pData.gold = (pData.gold || 0) + monster.gold;
         processLevelUp(pData);
+        
+        // Track the kill for quests before clearing the monster
+        await trackQuestKill(mName);
+        
         monster = null;
         isBusy = false;
         await sync();
         setTimeout(() => { updateUI(); }, 800);
     }
 
+    // --- SYSTEM FUNCTIONS (DEATH, UI, SYNC) ---
+    function handleDeath() {
+        isBusy = true;
+        document.getElementById('deathOverlay').style.display = 'flex';
+        setTimeout(() => { window.location.href = "map.html"; }, 5000);
+        sync();
+    }
+
     function updateUI() {
         if (!pData) return;
         document.getElementById('pLevel').innerText = `LVL ${pData.level || 1}`;
         const hasMonster = !!monster;
-        
-        // Fix: Updated Skill Detection for 'skills' array
-        const skillBtn = document.getElementById('skillBtn');
         document.getElementById('atkBtn').disabled = !hasMonster || isBusy;
-
+        
+        const skillBtn = document.getElementById('skillBtn');
         if (pData.skills && pData.skills.length > 0) {
             const spellName = pData.skills[0];
-            const cost = 15; 
-            skillBtn.innerText = `${spellName} (${cost}MP)`;
-            skillBtn.disabled = !hasMonster || isBusy || pData.stats.mana < cost;
+            skillBtn.innerText = `${spellName} (15MP)`;
+            skillBtn.disabled = !hasMonster || isBusy || pData.stats.mana < 15;
         } else {
             skillBtn.innerText = "No Skill";
             skillBtn.disabled = true;
         }
 
         document.getElementById('nextBtn').style.display = hasMonster ? 'none' : 'block';
-        
         if (monster) {
             document.getElementById('mHPFill').style.width = Math.max(0, (monster.curHp / monster.hp) * 100) + "%";
             document.getElementById('mHPText').innerText = `${Math.floor(monster.curHp)} / ${monster.hp}`;
@@ -390,6 +371,33 @@
         l.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
         l.scrollTop = l.scrollHeight;
     }
+
+    // --- GOD MENU ACTIONS ---
+    window.godTrigger = function() {
+        if(auth.currentUser?.uid !== ADMIN_UID) return;
+        godClicks++;
+        if(godClicks >= 5) { document.getElementById('godMenu').style.display = 'block'; refreshGodMenu(); godClicks = 0; }
+    };
+    window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
+    function refreshGodMenu() {
+        if(!pData) return;
+        let gearAtk = 0, gearDef = 0;
+        (pData.inventory || []).forEach(i => { if(i.equipped) { gearAtk += (i.atk || 0); gearDef += (i.def || 0); }});
+        document.getElementById('g-hp-mp').innerText = `HP: ${pData.stats.hp}/${pData.stats.maxHp} | MP: ${pData.stats.mana}/${pData.stats.maxMana}`;
+        document.getElementById('g-base').innerText = `Base Atk: ${pData.stats.atk} | Def: ${pData.stats.def}`;
+        document.getElementById('g-gear').innerText = `Gear Boost: +${gearAtk} Atk | +${gearDef} Def`;
+        document.getElementById('g-spells').innerHTML = (pData.skills || []).map(s => `[${s}]`).join("<br>") || "No skills found";
+    }
+    window.godRestore = async () => { pData.stats.hp = pData.stats.maxHp; pData.stats.mana = pData.stats.maxMana; await sync(); };
+    window.godGold = async (val) => { pData.gold = Math.max(0, (pData.gold || 0) + val); await sync(); };
+    window.godLevel = async (val) => { pData.level = Math.max(1, (pData.level || 1) + val); await sync(); };
+    window.godReset = async () => {
+        if(!confirm("HARD RESET?")) return;
+        pData.gold = 0; pData.exp = 0; pData.level = 1; pData.inventory = [];
+        pData.training = { str: 0, agi: 0, int: 0 };
+        pData.stats = { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 5, luck: 0 };
+        await sync(); location.reload();
+    };
 </script>
 </body>
 </html>

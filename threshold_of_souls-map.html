@@ -19,6 +19,34 @@
             border-right: 1px solid #111;
         }
 
+        /* LEVEL UP UI */
+        .lvl-up-toast {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--gold);
+            padding: 20px;
+            z-index: 10002;
+            text-align: center;
+            width: 260px;
+            display: none;
+            animation: slideIn 0.5s ease-out;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+        }
+        @keyframes slideIn {
+            from { transform: translate(-50%, -120%); opacity: 0; }
+            to { transform: translate(-50%, -50%); opacity: 1; }
+        }
+        .lvl-flash {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 10001;
+        }
+        .flash-anim { animation: flashEffect 0.6s ease-out; }
+        @keyframes flashEffect { 0% { opacity: 0.6; } 100% { opacity: 0; } }
+
         /* FLEE OVERLAY */
         #fleeOverlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -42,10 +70,7 @@
         .god-label { font-size: 0.55rem; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
         .god-stat { font-size: 0.75rem; color: #fff; margin-bottom: 2px; }
         .god-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
-        .god-btn { 
-            background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 8px 4px; 
-            font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold;
-        }
+        .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 8px 4px; font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold; }
         .god-btn:active { background: var(--teal); color: #000; }
         .god-reset { background: #300; border-color: #600; color: #ff4444; margin-top: 15px; width: 100%; }
 
@@ -79,6 +104,13 @@
 <body>
 
 <div class="scene" id="mainScene">
+    <div id="lvlFlash" class="lvl-flash"></div>
+    <div id="lvlToast" class="lvl-up-toast">
+        <div style="color: var(--gold); font-size: 1.2rem; font-weight: 900; letter-spacing: 2px;">LEVEL UP!</div>
+        <div id="lvlNew" style="color: #fff; font-size: 0.8rem; margin: 10px 0;">You reached Level --</div>
+        <div style="color: var(--teal); font-size: 0.6rem; font-style: italic;">Vitals Restored • Stats Increased</div>
+    </div>
+
     <div id="fleeOverlay">
         <div class="flee-msg">LEGENDS NEVER DIE...<br>GUESS YOU ARE NO LEGEND.</div>
         <div class="flee-sub">Cowardice has a steep price. You must sacrifice 50 Gold to escape this encounter alive.</div>
@@ -205,7 +237,7 @@
     window.confirmFlee = async function() {
         if (isBusy || !pData) return;
         isBusy = true;
-        const currentGold = pData.gold || 0;
+        const currentGold = Number(pData.gold) || 0;
         pData.gold = Math.max(0, currentGold - 50);
         addLog("Fleeing encounter... -50 Gold.", "var(--red)");
         await sync();
@@ -227,23 +259,22 @@
 
     function generateMonster() {
         document.getElementById('log').innerHTML = "";
-        const playerLvl = pData.level || 1;
+        const playerLvl = Number(pData.level) || 1;
         const zonePool = Object.values(MONSTER_DATABASE["THRESHOLD_OF_SOULS"]);
         
-        const rng = Math.random() * 100;
-        let allowedDiff = (rng < 10) ? 5 : (rng < 30) ? 4 : (rng < 70) ? 3 : 1;
-        let filteredPool = zonePool.filter(m => Math.abs((m.level || m.lvl) - playerLvl) <= allowedDiff);
-
+        let filteredPool = zonePool.filter(m => m.level <= (playerLvl + 2));
         if (filteredPool.length === 0) {
-            filteredPool = zonePool.sort((a, b) => Math.abs((a.level || a.lvl) - playerLvl) - Math.abs((b.level || b.lvl) - playerLvl)).slice(0, 3);
+            filteredPool = zonePool.sort((a, b) => a.level - playerLvl).slice(0, 3);
         }
 
         const selected = filteredPool[Math.floor(Math.random() * filteredPool.length)];
         if (selected) {
             monster = JSON.parse(JSON.stringify(selected)); 
-            monster.curHp = monster.hp;
-            const mLvl = monster.level || monster.lvl || 1;
-            addLog(`Manifested ${monster.name}! (Level ${mLvl})`, "#eee");
+            monster.curHp = Number(monster.hp);
+            monster.level = Number(monster.level) || 1;
+            monster.xp = Number(monster.xp) || (monster.level * 25);
+            monster.gold = Number(monster.gold) || (monster.level * 10);
+            addLog(`Manifested ${monster.name}! (Level ${monster.level})`, "#eee");
         }
         updateUI();
     }
@@ -255,8 +286,8 @@
         isBattleStarted = true; 
         
         let gearAtk = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
-        const result = calculateCombatResult((pData.stats?.atk || 10) + gearAtk, monster.def, pData.stats?.luck || 0);
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (Number(i.atk) || 0); });
+        const result = calculateCombatResult((Number(pData.stats?.atk) || 10) + gearAtk, Number(monster.def), Number(pData.stats?.luck) || 0);
         
         if (!result.isMiss) {
             monster.curHp -= result.damage;
@@ -281,8 +312,8 @@
         pData.stats.mana -= manaCost;
         
         let gearAtk = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
-        const result = calculateCombatResult(Math.floor(((pData.stats.atk || 10) + gearAtk) * 1.8), monster.def, pData.stats.luck + 5);
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (Number(i.atk) || 0); });
+        const result = calculateCombatResult(Math.floor(((Number(pData.stats.atk) || 10) + gearAtk) * 1.8), Number(monster.def), (Number(pData.stats.luck) || 0) + 5);
         
         addLog(`Cast ${pData.skills[0]}!`, "var(--mana)");
         if (!result.isMiss) {
@@ -301,8 +332,8 @@
         const idx = (pData.inventory || []).findIndex(i => i.id === id);
         if (idx === -1) { addLog("No potions!", "var(--red)"); return; }
         const item = pData.inventory[idx];
-        if (id === '7') pData.stats.hp = Math.min(pData.stats.maxHp, pData.stats.hp + (item.heal || 50));
-        else pData.stats.mana = Math.min(pData.stats.maxMana, pData.stats.mana + (item.restore || 30));
+        if (id === '7') pData.stats.hp = Math.min(pData.stats.maxHp, pData.stats.hp + (Number(item.heal) || 50));
+        else pData.stats.mana = Math.min(pData.stats.maxMana, pData.stats.mana + (Number(item.restore) || 30));
         pData.inventory.splice(idx, 1);
         updateUI();
         await sync();
@@ -311,9 +342,9 @@
     function monsterTurn() {
         if (!monster) { isBusy = false; return; }
         let gearDef = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearDef += (i.def || 0); });
-        const mAtk = rollRange(monster.atkMin, monster.atkMax);
-        const result = calculateCombatResult(mAtk, (pData.stats.def || 5) + gearDef, 0);
+        (pData.inventory || []).forEach(i => { if(i.equipped) gearDef += (Number(i.def) || 0); });
+        const mAtk = rollRange(Number(monster.atkMin), Number(monster.atkMax));
+        const result = calculateCombatResult(mAtk, (Number(pData.stats.def) || 5) + gearDef, 0);
         if (!result.isMiss) {
             pData.stats.hp = Math.max(0, pData.stats.hp - result.damage);
             addLog(`${monster.name} deals ${result.damage} DMG.`, "var(--red)");
@@ -325,15 +356,25 @@
     }
 
     async function handleVictory() {
-        const mName = monster.name;
-        addLog(`Victory! +${monster.xp} XP`, "var(--gold)");
-        pData.exp = (pData.exp || 0) + monster.xp;
-        pData.gold = (pData.gold || 0) + monster.gold;
-        processLevelUp(pData);
+        if (!monster) return;
+
+        const xpGained = Math.floor(Number(monster.xp) || 0);
+        const goldGained = Math.floor(Number(monster.gold) || 0);
+
+        addLog(`Victory! +${xpGained} XP`, "var(--gold)");
+        
+        pData.exp = (Number(pData.exp) || 0) + xpGained;
+        pData.gold = (Number(pData.gold) || 0) + goldGained;
+        
+        // Pass to level up processor - Check if it returned true
+        const didLevel = processLevelUp(pData);
+        if (didLevel) {
+            showLevelUpUI(pData.level);
+        }
         
         if (pData.activeQuest && !pData.activeQuest.isCompleted) {
-            if (pData.activeQuest.target === mName || pData.activeQuest.target === "ANY") {
-                pData.activeQuest.progress++;
+            if (pData.activeQuest.target === monster.name || pData.activeQuest.target === "ANY") {
+                pData.activeQuest.progress = (Number(pData.activeQuest.progress) || 0) + 1;
                 if (pData.activeQuest.progress >= pData.activeQuest.goalAmount) pData.activeQuest.isCompleted = true;
             }
         }
@@ -345,10 +386,27 @@
         setTimeout(() => { updateUI(); }, 800);
     }
 
+    // UI Helper for Level Up
+    function showLevelUpUI(newLvl) {
+        const toast = document.getElementById('lvlToast');
+        const flash = document.getElementById('lvlFlash');
+        document.getElementById('lvlNew').innerText = `You reached Level ${newLvl}`;
+        
+        flash.classList.add('flash-anim');
+        setTimeout(() => flash.classList.remove('flash-anim'), 600);
+
+        toast.style.display = 'block';
+        addLog(`ASCENSION: You are now Level ${newLvl}!`, "var(--gold)");
+
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
     function handleDeath() {
         isBusy = true;
         document.getElementById('deathOverlay').style.display = 'flex';
-        setTimeout(() => { window.location.href = "map.html"; }, 3000);
+        setTimeout(() => { window.location.href = "wildlands.html"; }, 3000);
     }
 
     function updateUI() {
@@ -381,8 +439,7 @@
             document.getElementById('mHPFill').style.width = (monster.curHp / monster.hp) * 100 + "%";
             document.getElementById('mHPText').innerText = `${Math.floor(monster.curHp)} / ${monster.hp}`;
             document.getElementById('mSprite').innerText = monster.emoji || "👾";
-            const mLvl = monster.level || monster.lvl || 1;
-            document.getElementById('mMeta').innerText = `${monster.name} (LVL ${mLvl})`;
+            document.getElementById('mMeta').innerText = `${monster.name} (LVL ${monster.level})`;
         } else {
             document.getElementById('mHPFill').style.width = "0%";
             document.getElementById('mHPText').innerText = "---";
@@ -397,11 +454,13 @@
     }
 
     async function sync() { if (auth.currentUser) await updateDoc(doc(db, "players", auth.currentUser.uid), pData); }
+    
     function addLog(msg, color) {
         const l = document.getElementById('log');
         l.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
         l.scrollTop = l.scrollHeight;
     }
+    
     function triggerShake(id, permanent) {
         const el = document.getElementById(id);
         if (el) { el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 200); }
@@ -420,38 +479,25 @@
     };
     window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
     window.godRestore = async () => { pData.stats.hp = pData.stats.maxHp; pData.stats.mana = pData.stats.maxMana; await sync(); refreshGodStats(); };
-    window.godGold = async (v) => { pData.gold = (pData.gold || 0) + v; await sync(); };
-    window.godLevel = async (v) => { pData.level = (pData.level || 1) + v; await sync(); };
+    window.godGold = async (v) => { pData.gold = (Number(pData.gold) || 0) + v; await sync(); };
+    window.godLevel = async (v) => { 
+        pData.level = (Number(pData.level) || 1) + v; 
+        pData.stats.maxHp += 25; // Manual bump for admin
+        pData.stats.hp = pData.stats.maxHp;
+        await sync(); 
+    };
     
-    // UPDATED COMPREHENSIVE RESET
     window.godReset = async () => {
-        if(confirm("PERMANENT DATA WIPE? This will reset all stats, training, and inventory to Level 1.")) {
+        if(confirm("PERMANENT DATA WIPE?")) {
             const resetData = {
-                level: 1,
-                exp: 0,
-                gold: 0,
-                shards: 0,
-                inventory: [],
-                activeQuest: null,
-                "stats.hp": 100,
-                "stats.maxHp": 100,
-                "stats.mana": 50,
-                "stats.maxMana": 50,
-                "stats.atk": 10,
-                "stats.def": 10,
-                "stats.luck": 5
-                // birthSelected: false (Commented out to keep the starting element)
+                level: 1, exp: 0, gold: 0, shards: 0, inventory: [], activeQuest: null,
+                "stats.hp": 100, "stats.maxHp": 100, "stats.mana": 50, "stats.maxMana": 50,
+                "stats.atk": 10, "stats.def": 10, "stats.luck": 5
             };
-
             try {
-                const playerRef = doc(db, "players", auth.currentUser.uid);
-                await updateDoc(playerRef, resetData);
-                addLog("SYSTEM: Profile Purged. Restarting...", "var(--red)");
-                setTimeout(() => { location.reload(); }, 1000);
-            } catch (error) {
-                console.error("Reset failed:", error);
-                alert("Void Shift failed. Check console.");
-            }
+                await updateDoc(doc(db, "players", auth.currentUser.uid), resetData);
+                location.reload();
+            } catch (e) { console.error(e); }
         }
     };
 </script>

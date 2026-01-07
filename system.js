@@ -28,21 +28,21 @@ export function getPlayerTotals(pData) {
     
     const gear = pData.gear || {};
     const totals = {
-        atk: pData.stats.atk || 0,
-        def: pData.stats.def || 0,
-        maxHp: pData.stats.maxHp || 0,
-        maxMana: pData.stats.maxMana || 0,
-        luck: pData.stats.luck || 0
+        atk: Number(pData.stats.atk) || 0,
+        def: Number(pData.stats.def) || 0,
+        maxHp: Number(pData.stats.maxHp) || 0,
+        maxMana: Number(pData.stats.maxMana) || 0,
+        luck: Number(pData.stats.luck) || 0
     };
 
     // Add Weapon Attack
-    if (gear.weapon && gear.weapon.atk) totals.atk += gear.weapon.atk;
+    if (gear.weapon && gear.weapon.atk) totals.atk += Number(gear.weapon.atk);
 
     // Add Armor Defense
-    if (gear.armor && gear.armor.def) totals.def += gear.armor.def;
+    if (gear.armor && gear.armor.def) totals.def += Number(gear.armor.def);
 
     // Add Accessory Luck
-    if (gear.accessory && gear.accessory.luck) totals.luck += gear.accessory.luck;
+    if (gear.accessory && gear.accessory.luck) totals.luck += Number(gear.accessory.luck);
 
     return totals;
 }
@@ -54,55 +54,88 @@ export function rollRange(min, max) {
 
 /** Progression: XP needed for next level */
 export function getRequiredXP(level) {
-    return level * SYSTEM_CONFIG.XP_BASE;
+    // Ensure level is a number before math
+    const lvl = Number(level) || 1;
+    return lvl * SYSTEM_CONFIG.XP_BASE;
 }
 
 /** Formula Engine for Training & Forge */
 export const GameFormulas = {
     // Logarithmic scale to keep time reasonable (3-8 mins usually)
     calculateTrainingTime: (currentLvl) => {
+        const lvl = Number(currentLvl) || 1;
         const baseMin = 2;
-        const growth = Math.log2(currentLvl + 1);
+        const growth = Math.log2(lvl + 1);
         return Math.floor(baseMin + growth);
     },
     // Linear scaling cost
     calculateTrainingCost: (currentLvl) => {
-        return SYSTEM_CONFIG.TRAIN_BASE_COST + (currentLvl * SYSTEM_CONFIG.TRAIN_COST_INC);
+        const lvl = Number(currentLvl) || 1;
+        return SYSTEM_CONFIG.TRAIN_BASE_COST + (lvl * SYSTEM_CONFIG.TRAIN_COST_INC);
     },
     // Percentage-based rewards (Fixed to feel meaningful at high levels)
     calculateStatGain: (currentMaxStat, statType) => {
-        const gain = Math.ceil(currentMaxStat * SYSTEM_CONFIG.TRAIN_STAT_PERCENT);
+        const stat = Number(currentMaxStat) || 0;
+        const gain = Math.ceil(stat * SYSTEM_CONFIG.TRAIN_STAT_PERCENT);
         const minGain = (statType === 'maxHp' || statType === 'hp') ? 20 : 10;
         return Math.max(gain, minGain);
     }
 };
 
-/** Global Level Up Logic */
+/** Global Level Up Logic - REINFORCED FOR DATA INTEGRITY */
 export function processLevelUp(pData) {
+    if (!pData || !pData.stats) return false;
+
     let leveled = false;
-    while (pData.exp >= getRequiredXP(pData.level)) {
-        pData.exp -= getRequiredXP(pData.level);
-        pData.level += 1;
-        pData.stats.maxHp += SYSTEM_CONFIG.HP_PER_LVL;
-        pData.stats.maxMana += SYSTEM_CONFIG.MP_PER_LVL;
-        pData.stats.atk += SYSTEM_CONFIG.ATK_PER_LVL;
-        pData.stats.def += SYSTEM_CONFIG.DEF_PER_LVL;
+    
+    // Force current values to Numbers to prevent string concatenation bugs
+    let currentExp = Number(pData.exp) || 0;
+    let currentLvl = Number(pData.level) || 1;
+
+    // While loop checks if the current XP exceeds the requirement for the current level
+    while (currentExp >= getRequiredXP(currentLvl)) {
+        
+        // Subtract the cost of the level just achieved
+        currentExp -= getRequiredXP(currentLvl);
+        
+        // Increment Level number
+        currentLvl += 1;
+
+        // Apply Stat Increases (Ensuring everything remains a Number)
+        pData.stats.maxHp = (Number(pData.stats.maxHp) || 100) + SYSTEM_CONFIG.HP_PER_LVL;
+        pData.stats.maxMana = (Number(pData.stats.maxMana) || 50) + SYSTEM_CONFIG.MP_PER_LVL;
+        pData.stats.atk = (Number(pData.stats.atk) || 10) + SYSTEM_CONFIG.ATK_PER_LVL;
+        pData.stats.def = (Number(pData.stats.def) || 10) + SYSTEM_CONFIG.DEF_PER_LVL;
+        
+        // Heal to full on level up
         pData.stats.hp = pData.stats.maxHp;
         pData.stats.mana = pData.stats.maxMana;
+        
         leveled = true;
     }
+
+    // Write back the clean numbers to the pData object
+    if (leveled) {
+        pData.level = currentLvl;
+        pData.exp = currentExp;
+    }
+
     return leveled;
 }
 
 /** Combat Damage Calculator */
 export function calculateCombatResult(attackerAtk, defenderDef, luck = 0) {
+    const aAtk = Number(attackerAtk) || 0;
+    const dDef = Number(defenderDef) || 0;
+    const lck = Number(luck) || 0;
+
     const hitRoll = Math.random() * 100;
     if (hitRoll > SYSTEM_CONFIG.BASE_ACCURACY) return { damage: 0, isCrit: false, isMiss: true };
 
     const critRoll = Math.random() * 100;
-    const isCrit = critRoll <= (SYSTEM_CONFIG.CRIT_CHANCE + (luck * 0.5));
+    const isCrit = critRoll <= (SYSTEM_CONFIG.CRIT_CHANCE + (lck * 0.5));
 
-    let damage = Math.max(1, attackerAtk - (defenderDef * 0.5));
+    let damage = Math.max(1, aAtk - (dDef * 0.5));
     const variance = 1 + (Math.random() * (SYSTEM_CONFIG.VARIANCE * 2) - SYSTEM_CONFIG.VARIANCE);
     damage *= variance;
     if (isCrit) damage *= SYSTEM_CONFIG.CRIT_MULTI;
@@ -128,5 +161,6 @@ export function getInventoryWeight(inventory) {
 
 /** Death Penalty Calculation */
 export function getDeathPenalty(currentGold) {
-    return Math.floor(currentGold * 0.15); 
+    const gold = Number(currentGold) || 0;
+    return Math.floor(gold * 0.15); 
 }

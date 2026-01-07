@@ -57,9 +57,16 @@ export function getMonstersByZone(zoneKey) {
 /** Randomly select a monster from a zone based on player level */
 export function getRandomMonsterFromZone(zoneKey, playerLvl) {
     const zonePool = Object.values(getMonstersByZone(zoneKey));
-    // Find monsters within +/- 2 levels
-    const eligible = zonePool.filter(m => Math.abs(m.level - playerLvl) <= 2);
     
+    /** * UPDATED LOGIC: 
+     * We filter for any monster where level is less than or equal to (Player Level + 2).
+     * This allows lower level monsters to remain in the pool, while preventing 
+     * Level 1 players from fighting Level 10 bosses too early.
+     */
+    const eligible = zonePool.filter(m => m.level <= (playerLvl + 2));
+    
+    // Fallback: If no monsters match (should not happen), return the first monster in the pool
     if (eligible.length === 0) return zonePool[0]; 
+    
     return eligible[Math.floor(Math.random() * eligible.length)];
 }

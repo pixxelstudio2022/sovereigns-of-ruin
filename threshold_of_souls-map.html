@@ -182,8 +182,15 @@
             if (!snap.exists()) return;
             pData = snap.data();
             updateUI();
+            if(document.getElementById('godMenu').style.display === 'block') refreshGodStats();
         });
     });
+
+    function refreshGodStats() {
+        if(!pData) return;
+        document.getElementById('g-hp-mp').innerText = `HP: ${Math.floor(pData.stats.hp)}/${pData.stats.maxHp} | MP: ${Math.floor(pData.stats.mana)}/${pData.stats.maxMana}`;
+        document.getElementById('g-base').innerText = `Base Atk: ${pData.stats.atk} | Def: ${pData.stats.def}`;
+    }
 
     // --- NAVIGATION & FLEE LOGIC ---
     window.handleRetreat = function() {
@@ -223,7 +230,6 @@
         const playerLvl = pData.level || 1;
         const zonePool = Object.values(MONSTER_DATABASE["THRESHOLD_OF_SOULS"]);
         
-        // Weighted Spawning
         const rng = Math.random() * 100;
         let allowedDiff = (rng < 10) ? 5 : (rng < 30) ? 4 : (rng < 70) ? 3 : 1;
         let filteredPool = zonePool.filter(m => Math.abs((m.level || m.lvl) - playerLvl) <= allowedDiff);
@@ -246,7 +252,7 @@
     window.attack = function() {
         if (!monster || isBusy) return;
         isBusy = true;
-        isBattleStarted = true; // Combat officially started
+        isBattleStarted = true; 
         
         let gearAtk = 0;
         (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (i.atk || 0); });
@@ -325,7 +331,6 @@
         pData.gold = (pData.gold || 0) + monster.gold;
         processLevelUp(pData);
         
-        // Quest Check
         if (pData.activeQuest && !pData.activeQuest.isCompleted) {
             if (pData.activeQuest.target === mName || pData.activeQuest.target === "ANY") {
                 pData.activeQuest.progress++;
@@ -357,7 +362,6 @@
             skillBtn.disabled = !hasMonster || isBusy || pData.stats.mana < 15;
         }
 
-        // Button Visibility Logic
         if (!hasMonster) {
             document.getElementById('nextBtn').style.display = 'block';
             document.getElementById('skipBtn').style.display = 'none';
@@ -404,12 +408,52 @@
     }
 
     // --- ADMIN TOOLS ---
-    window.godTrigger = () => { if(auth.currentUser?.uid === ADMIN_UID) { godClicks++; if(godClicks >= 5) { document.getElementById('godMenu').style.display = 'block'; godClicks = 0; }}};
+    window.godTrigger = () => { 
+        if(auth.currentUser?.uid === ADMIN_UID) { 
+            godClicks++; 
+            if(godClicks >= 5) { 
+                document.getElementById('godMenu').style.display = 'block'; 
+                refreshGodStats();
+                godClicks = 0; 
+            }
+        }
+    };
     window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
-    window.godRestore = async () => { pData.stats.hp = pData.stats.maxHp; pData.stats.mana = pData.stats.maxMana; await sync(); };
+    window.godRestore = async () => { pData.stats.hp = pData.stats.maxHp; pData.stats.mana = pData.stats.maxMana; await sync(); refreshGodStats(); };
     window.godGold = async (v) => { pData.gold = (pData.gold || 0) + v; await sync(); };
     window.godLevel = async (v) => { pData.level = (pData.level || 1) + v; await sync(); };
-    window.godReset = async () => { if(confirm("Reset?")) { pData.level = 1; pData.gold = 0; await sync(); location.reload(); }};
+    
+    // UPDATED COMPREHENSIVE RESET
+    window.godReset = async () => {
+        if(confirm("PERMANENT DATA WIPE? This will reset all stats, training, and inventory to Level 1.")) {
+            const resetData = {
+                level: 1,
+                exp: 0,
+                gold: 0,
+                shards: 0,
+                inventory: [],
+                activeQuest: null,
+                "stats.hp": 100,
+                "stats.maxHp": 100,
+                "stats.mana": 50,
+                "stats.maxMana": 50,
+                "stats.atk": 10,
+                "stats.def": 10,
+                "stats.luck": 5
+                // birthSelected: false (Commented out to keep the starting element)
+            };
+
+            try {
+                const playerRef = doc(db, "players", auth.currentUser.uid);
+                await updateDoc(playerRef, resetData);
+                addLog("SYSTEM: Profile Purged. Restarting...", "var(--red)");
+                setTimeout(() => { location.reload(); }, 1000);
+            } catch (error) {
+                console.error("Reset failed:", error);
+                alert("Void Shift failed. Check console.");
+            }
+        }
+    };
 </script>
 </body>
 </html>

@@ -125,21 +125,47 @@ export const CombatEngine = {
         const goldGained = Math.floor(Number(this.monster.gold) || 0);
 
         this.ui.addLog(`Victory! +${xpGained} XP`, "var(--gold)");
-        this.pData.exp += xpGained;
-        this.pData.gold += goldGained;
+        this.ui.addLog(`Found ${goldGained} Gold!`, "var(--gold)");
+        
+        // 1. ADD REWARDS
+        this.pData.exp = (Number(this.pData.exp) || 0) + xpGained;
+        this.pData.gold = (Number(this.pData.gold) || 0) + goldGained;
 
+        // 2. IMMEDIATE LEVEL UP LOGIC
+        // This calculates if current XP >= (currentLevel * 100)
+        let levelUps = 0;
+        while (this.pData.exp >= (Number(this.pData.level) * 100)) {
+            this.pData.exp -= (Number(this.pData.level) * 100);
+            this.pData.level = (Number(this.pData.level) || 1) + 1;
+            levelUps++;
+        }
+
+        if (levelUps > 0) {
+            this.ui.addLog(`✨ LEVELED UP to ${this.pData.level}!`, "var(--mana)");
+            // Optional: Full heal on level up
+            if(this.pData.stats) this.pData.stats.hp = this.pData.stats.maxHp;
+        }
+
+        // 3. QUEST PROGRESS
         if (this.pData.activeQuest && !this.pData.activeQuest.isCompleted) {
             if (this.pData.activeQuest.target === this.monster.name || this.pData.activeQuest.target === "ANY") {
                 this.pData.activeQuest.progress = (Number(this.pData.activeQuest.progress) || 0) + 1;
-                if (this.pData.activeQuest.progress >= this.pData.activeQuest.goalAmount) this.pData.activeQuest.isCompleted = true;
+                if (this.pData.activeQuest.progress >= this.pData.activeQuest.goalAmount) {
+                    this.pData.activeQuest.isCompleted = true;
+                    this.ui.addLog("Quest Objective Met!", "var(--gold)");
+                }
             }
         }
 
+        // 4. CLEAN UP STATE
         this.monster = null;
         this.isBattleStarted = false;
         this.isBusy = false;
         
-        await this.sync();
+        // 5. SYNC & REFRESH UI
+        // We sync AFTER level up logic so database gets the corrected values
+        await this.sync(); 
+        
         this.ui.onVictory(this.pData); 
         this.ui.update();
     }

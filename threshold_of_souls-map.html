@@ -159,8 +159,16 @@
 
     onAuthStateChanged(auth, (user) => {
         if (!user) return;
+
         onSnapshot(doc(db, "players", user.uid), (snap) => {
-            pData = snap.data();
+            const newData = snap.data();
+            
+            // If we are busy in a battle or just finished one, 
+            // don't let the DB overwrite our local XP/HP calculations 
+            // until the sync is confirmed.
+            if (CombatEngine.isBusy) return; 
+
+            pData = newData;
             CombatEngine.init(pData, db, auth, {
                 update: updateUI,
                 addLog: (m, c) => { 
@@ -226,7 +234,6 @@
 
     window.godAddExp = async (v) => {
         pData.exp = (Number(pData.exp) || 0) + v;
-        // Check for level up in god mode too
         const target = pData.level * 100;
         if(pData.exp >= target) {
             await godLevel(1);

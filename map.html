@@ -18,7 +18,7 @@
         .ui-header-line { border-bottom: 1px solid #111; padding: 10px 15px; flex-shrink: 0; }
         .ui-footer-line { border-top: 1px solid #111; padding: 10px; text-align: center; flex-shrink: 0; background: #050505; }
 
-        /* THEMES - Unified with other pages */
+        /* THEMES */
         .theme-Fire { --accent: #ff4444; } .theme-Water { --accent: #22ccff; } .theme-Wind { --accent: #a8ff62; }
         .theme-Earth { --accent: #ffcc66; } .theme-Soul { --accent: #62ffe1; } .theme-Shadow { --accent: #bf66ff; }
 
@@ -69,13 +69,18 @@
         }
 
         .modal-overlay { 
-            position: fixed; width: 400px; inset: 0; background: #050505; display: none; 
-            flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; 
+            position: absolute; width: 100%; inset: 0; background: #050505; 
+            display: none; flex-direction: column; padding: 20px; z-index: 2000; box-sizing: border-box; 
         }
+
+        #loading { 
+            position: absolute; width: 100%; inset: 0; background: #000; 
+            z-index: 3000; display: flex; justify-content: center; align-items: center; 
+            color: var(--accent); font-weight: bold; font-size: 0.7rem; letter-spacing: 3px; 
+        }
+
         .modal-header { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         .modal-title { color: var(--accent); font-weight: bold; font-size: 0.9rem; letter-spacing: 1px; }
-
-        #loading { position: fixed; width: 400px; inset: 0; background: #000; z-index: 3000; display: flex; justify-content: center; align-items: center; color: var(--accent); font-weight: bold; font-size: 0.7rem; letter-spacing: 3px; }
 
         .fade-in { animation: fadeIn 0.3s ease-in forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -83,24 +88,21 @@
 </head>
 <body id="bodyTheme">
 
-    <div id="loading">MANIFESTING REALM...</div>
-
     <div class="game-container">
+        <div id="loading">MANIFESTING REALM...</div>
+
         <div id="campfireOverlay">
             <div style="font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px #ff4444);">🔥</div>
             <h2 style="color: #ff4444; margin: 0; letter-spacing: 2px; font-size: 1.2rem;">CRIMSON HEARTH</h2>
             <p style="color: #555; font-size: 0.6rem; text-transform: uppercase; margin-bottom: 30px;">Restores your vessel's integrity</p>
-
             <button class="camp-btn" id="btnFreeHeal" onclick="processHeal('free')" style="border-color: #62ffe1;">
                 <span style="color: #62ffe1;">Deep Rest</span>
                 <span class="camp-val" id="freeHealLabel">+10% HP/MP (FREE)</span>
             </button>
-
             <button class="camp-btn" id="btnPaidHeal" onclick="processHeal('paid')" style="border-color: #ffcc00;">
                 <span style="color: #ffcc00;">Greater Restoration</span>
                 <span class="camp-val" id="paidHealLabel">FULL RECOVER (200G)</span>
             </button>
-
             <button class="camp-btn" onclick="toggleCampfire(false)" style="margin-top: 20px; border: none; background: transparent;">
                 <span style="color: #444; width: 100%; text-align: center;">Leave the fire</span>
             </button>
@@ -118,9 +120,10 @@
                 <div style="background: #0a0a0a; padding: 20px; border-radius: 8px; border: 1px solid #1a1a1a; text-align: center;">
                     <h3 id="mod-name" style="color: var(--accent); margin: 0; text-transform: uppercase;">---</h3>
                     <p id="mod-element" style="font-size: 0.6rem; color: #555; margin: 5px 0 15px; letter-spacing: 2px;">---</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.7rem; font-family: monospace;">
-                        <div style="color: #444;">POWER<br><span id="mod-atk" style="color: #eee; font-size: 1rem;">--</span></div>
-                        <div style="color: #444;">RESIL<br><span id="mod-def" style="color: #eee; font-size: 1rem;">--</span></div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.6rem; font-family: monospace;">
+                        <div style="color: #444;">POWER<br><span id="mod-atk" style="color: #eee; font-size: 0.9rem;">--</span></div>
+                        <div style="color: #444;">RESIL<br><span id="mod-def" style="color: #eee; font-size: 0.9rem;">--</span></div>
+                        <div style="color: #444;">LUCK<br><span id="mod-luck" style="color: #eee; font-size: 0.9rem;">--</span></div>
                     </div>
                 </div>
             </div>
@@ -246,6 +249,7 @@
         });
 
         function updateUI() {
+            if (!pData) return;
             const s = pData.stats;
             document.getElementById('bodyTheme').className = `theme-${pData.element}`;
             document.getElementById('pName').innerText = pData.name;
@@ -253,7 +257,7 @@
             document.getElementById('pGold').innerText = pData.gold;
             document.getElementById('pShards').innerText = pData.shards || 0;
             
-            // Resource Bars
+            // Resource Bar Updates
             document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
             document.getElementById('hpLabel').innerText = `HP: ${Math.floor(s.hp)}/${s.maxHp}`;
             document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
@@ -263,25 +267,30 @@
             document.getElementById('expBar').style.width = (Math.min(pData.exp / expReq, 1) * 100) + "%";
             document.getElementById('expLabel').innerText = `EXP: ${pData.exp}/${expReq}`;
             
-            // Stats (Including Gear)
-            let gearAtk = 0; let gearDef = 0;
-            (pData.inventory || []).forEach(i => {
-                if(i.equipped) {
-                    gearAtk += (i.atk || 0);
-                    gearDef += (i.def || 0);
+            // CALCULATE TOTAL STATS (Base + Gear)
+            let gearAtk = 0; 
+            let gearDef = 0;
+            let gearLuck = 0;
+
+            (pData.inventory || []).forEach(item => {
+                if(item.equipped) {
+                    gearAtk += (item.atk || 0);
+                    gearDef += (item.def || 0);
+                    gearLuck += (item.luck || 0);
                 }
             });
 
+            // Update Vessel Core Stats
             document.getElementById('mod-name').innerText = pData.name;
             document.getElementById('mod-element').innerText = pData.element;
-            document.getElementById('mod-atk').innerText = (pData.stats.atk || 0) + gearAtk;
-            document.getElementById('mod-def').innerText = (pData.stats.def || 0) + gearDef;
+            document.getElementById('mod-atk').innerText = (s.atk || 0) + gearAtk;
+            document.getElementById('mod-def').innerText = (s.def || 0) + gearDef;
+            document.getElementById('mod-luck').innerText = (s.luck || 0) + gearLuck;
             
             document.getElementById('loading').style.display = 'none';
             checkHealCooldown();
         }
 
-        // --- CAMPFIRE LOGIC ---
         function checkHealCooldown() {
             const now = Date.now();
             const lastHeal = pData.lastCampfireHeal || 0;
@@ -325,12 +334,13 @@
             document.getElementById('paidHealLabel').innerText = "FULL RECOVER (200G)";
         }
 
-        // --- NAVIGATION ---
         window.toggleCampfire = (show) => document.getElementById('campfireOverlay').style.display = show ? 'flex' : 'none';
+        
         window.toggleModal = () => {
             const m = document.getElementById('profileModal');
             m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         };
+
         window.toggleMapPage = () => {
             const p1 = document.getElementById('grid-primary');
             const p2 = document.getElementById('grid-secondary');

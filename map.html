@@ -242,11 +242,45 @@
                 onSnapshot(doc(db, "players", user.uid), (snap) => {
                     if (snap.exists()) {
                         pData = snap.data();
+                        checkLevelUp(); // Check for overflow every time data changes
                         updateUI();
                     }
                 });
             } else { window.location.href = "index.html"; }
         });
+
+        async function checkLevelUp() {
+            if (!pData) return;
+            
+            let curLvl = pData.level;
+            let curExp = pData.exp;
+            let leveled = false;
+
+            // Logic: While EXP is enough to reach the next target
+            // Substract the requirement and add to Level
+            while (curExp >= (curLvl * 100)) {
+                curExp -= (curLvl * 100);
+                curLvl++;
+                leveled = true;
+            }
+
+            if (leveled) {
+                // Calculate new max stats based on level
+                const newMaxHp = 100 + (curLvl - 1) * 20;
+                const newMaxMana = 50 + (curLvl - 1) * 10;
+                
+                await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                    level: curLvl,
+                    exp: curExp,
+                    "stats.maxHp": newMaxHp,
+                    "stats.maxMana": newMaxMana,
+                    "stats.hp": newMaxHp, // Fully heal on level up
+                    "stats.mana": newMaxMana,
+                    "stats.atk": 10 + (curLvl - 1) * 2,
+                    "stats.def": 5 + (curLvl - 1) * 2
+                });
+            }
+        }
 
         function updateUI() {
             if (!pData) return;
@@ -257,7 +291,6 @@
             document.getElementById('pGold').innerText = pData.gold;
             document.getElementById('pShards').innerText = pData.shards || 0;
             
-            // Resource Bar Updates
             document.getElementById('hpBar').style.width = (s.hp / s.maxHp * 100) + "%";
             document.getElementById('hpLabel').innerText = `HP: ${Math.floor(s.hp)}/${s.maxHp}`;
             document.getElementById('manaBar').style.width = (s.mana / s.maxMana * 100) + "%";
@@ -267,11 +300,7 @@
             document.getElementById('expBar').style.width = (Math.min(pData.exp / expReq, 1) * 100) + "%";
             document.getElementById('expLabel').innerText = `EXP: ${pData.exp}/${expReq}`;
             
-            // CALCULATE TOTAL STATS (Base + Gear)
-            let gearAtk = 0; 
-            let gearDef = 0;
-            let gearLuck = 0;
-
+            let gearAtk = 0, gearDef = 0, gearLuck = 0;
             (pData.inventory || []).forEach(item => {
                 if(item.equipped) {
                     gearAtk += (item.atk || 0);
@@ -280,7 +309,6 @@
                 }
             });
 
-            // Update Vessel Core Stats
             document.getElementById('mod-name').innerText = pData.name;
             document.getElementById('mod-element').innerText = pData.element;
             document.getElementById('mod-atk').innerText = (s.atk || 0) + gearAtk;
@@ -335,22 +363,18 @@
         }
 
         window.toggleCampfire = (show) => document.getElementById('campfireOverlay').style.display = show ? 'flex' : 'none';
-        
         window.toggleModal = () => {
             const m = document.getElementById('profileModal');
             m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
         };
-
         window.toggleMapPage = () => {
-            const p1 = document.getElementById('grid-primary');
-            const p2 = document.getElementById('grid-secondary');
+            const p1 = document.getElementById('grid-primary'), p2 = document.getElementById('grid-secondary');
             const ind = document.getElementById('pageIndicator');
             const isP1 = p1.style.display !== 'none';
             p1.style.display = isP1 ? 'none' : 'grid';
             p2.style.display = isP1 ? 'grid' : 'none';
             ind.innerText = isP1 ? "VILLAGE OUTSKIRTS" : "VILLAGE CORE";
         };
-
         window.handleLogout = async () => {
             if (confirm("Disconnect?")) {
                 await updateDoc(doc(db, "players", auth.currentUser.uid), { isOnline: false });
@@ -358,7 +382,6 @@
                 window.location.href = "index.html";
             }
         };
-
         setInterval(() => { document.getElementById('realTimeClock').innerText = new Date().toLocaleTimeString(); }, 1000);
     </script>
 </body>

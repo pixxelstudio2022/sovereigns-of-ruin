@@ -5,140 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Threshold of Souls - Combat</title>
     <style>
-        :root { --teal: #62ffe1; --red: #ff4444; --gold: #ffcc00; --bg: #050505; --mana: #22ccff; }
+        :root { --teal: #62ffe1; --red: #ff4444; --gold: #ffcc00; --bg: #050505; --mana: #22ccff; --xp: #bb66ff; }
         body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
+        .scene { width: 400px; height: 100dvh; position: relative; display: flex; flex-direction: column; background: #050505; border-left: 1px solid #111; border-right: 1px solid #111; }
         
-        .scene { 
-            width: 400px; 
-            height: 100dvh; 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            background: #050505; 
-            border-left: 1px solid #111; 
-            border-right: 1px solid #111;
-        }
+        /* Level Up Toast */
+        .lvl-up-toast { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid var(--gold); padding: 20px; z-index: 10002; text-align: center; width: 260px; display: none; box-shadow: 0 0 20px rgba(255,204,0,0.4); }
 
-        /* LEVEL UP UI */
-        .lvl-up-toast {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            border: 2px solid var(--gold);
-            padding: 20px;
-            z-index: 10002;
-            text-align: center;
-            width: 260px;
-            display: none;
-            animation: slideIn 0.5s ease-out;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
-        }
-        @keyframes slideIn {
-            from { transform: translate(-50%, -120%); opacity: 0; }
-            to { transform: translate(-50%, -50%); opacity: 1; }
-        }
-        .lvl-flash {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: white; opacity: 0; pointer-events: none; z-index: 10001;
-        }
-        .flash-anim { animation: flashEffect 0.6s ease-out; }
-        @keyframes flashEffect { 0% { opacity: 0.6; } 100% { opacity: 0; } }
-
-        /* FLEE OVERLAY */
-        #fleeOverlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 10001;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 30px; box-sizing: border-box;
-            border: 1px solid var(--red);
-        }
-        .flee-msg { color: var(--red); font-weight: 900; font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; line-height: 1.3; }
-        .flee-sub { color: #888; font-size: 0.7rem; margin-bottom: 25px; line-height: 1.5; font-style: italic; }
-
-        /* GOD MENU STYLES */
-        #godMenu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 10000; display: none;
-            padding: 20px; box-sizing: border-box; overflow-y: auto;
-            border: 1px solid var(--gold);
-        }
-        .god-header { color: var(--gold); font-size: 0.9rem; font-weight: 900; text-align: center; margin-bottom: 15px; letter-spacing: 2px; }
+        /* ADVANCED GOD MENU */
+        #godMenu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 10000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid var(--gold); }
+        .god-header { color: var(--gold); font-size: 0.9rem; font-weight: 900; text-align: center; margin-bottom: 15px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .god-card { background: #111; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-        .god-label { font-size: 0.55rem; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .god-stat { font-size: 0.75rem; color: #fff; margin-bottom: 2px; }
-        .god-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; }
-        .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 8px 4px; font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold; }
+        .god-label { font-size: 0.55rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 6px; font-weight: bold; }
+        .god-stat { font-size: 0.65rem; color: #fff; margin-bottom: 4px; font-family: monospace; display: flex; justify-content: space-between;}
+        .stat-val { color: var(--teal); }
+        .gear-val { color: var(--gold); font-size: 0.6rem; }
+        .god-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 10px 4px; font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold; border-radius: 2px; }
+        .god-btn:hover { border-color: var(--teal); }
         .god-btn:active { background: var(--teal); color: #000; }
-        .god-reset { background: #300; border-color: #600; color: #ff4444; margin-top: 15px; width: 100%; }
+        .god-reset { background: #300 !important; border-color: #f44 !important; color: #ff4444 !important; margin-top: 15px; width: 100%; }
 
-        /* DEATH OVERLAY */
-        #deathOverlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #1a0000 0%, #000 80%);
-            display: none; z-index: 999; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
-        }
-        .death-text { color: #ff0000; font-size: 1.4rem; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 15px; }
-
+        /* UI Elements */
         .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #1a1a1a; }
         .map-title { font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; color: #fff; text-transform: uppercase; cursor: pointer; }
         .monster-area { padding: 15px 0; display: flex; flex-direction: column; align-items: center; background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%); }
-        .monster-sprite { font-size: 3.5rem; margin-bottom: 8px; filter: drop-shadow(0 0 10px rgba(98, 255, 225, 0.2)); }
-        .combat-log { height: 100px; padding: 10px 15px; font-size: 0.65rem; color: #888; overflow-y: auto; font-family: 'monospace'; background: #020202; line-height: 1.5; border-top: 1px solid #111; border-bottom: 1px solid #111; }
+        .monster-sprite { font-size: 3.5rem; margin-bottom: 8px; }
+        .combat-log { height: 100px; padding: 10px 15px; font-size: 0.65rem; color: #888; overflow-y: auto; font-family: 'monospace'; background: #020202; border-top: 1px solid #111; border-bottom: 1px solid #111; }
         .player-footer { background: #080808; padding: 12px 15px; }
-        .bar-wrap { width: 100%; height: 8px; background: #111; border: 1px solid #222; position: relative; overflow: hidden; border-radius: 1px; }
+        .bar-wrap { width: 100%; height: 8px; background: #111; border: 1px solid #222; position: relative; overflow: hidden; }
         .bar-fill { height: 100%; transition: width 0.3s ease; }
         .hp-fill { background: var(--red); }
         .mp-fill { background: var(--mana); }
+        .xp-fill { background: var(--xp); }
         .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px 5px; font-size: 0.6rem; font-weight: 800; cursor: pointer; border-radius: 3px; text-transform: uppercase; }
-        .btn:active { background: var(--teal); color: #000; }
+        .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px 5px; font-size: 0.6rem; font-weight: 800; cursor: pointer; text-transform: uppercase; border-radius: 2px; }
         .btn:disabled { opacity: 0.15; pointer-events: none; }
-        .shake { animation: shake 0.15s ease-in-out infinite; }
-        @keyframes shake { 0% { transform: translate(0, 0); } 25% { transform: translate(6px, -3px); } 50% { transform: translate(-6px, 3px); } 100% { transform: translate(0, 0); } }
+
+        .shake { animation: shake 0.15s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(4px,0); } 75% { transform: translate(-4px,0); } }
     </style>
 </head>
 <body>
 
 <div class="scene" id="mainScene">
-    <div id="lvlFlash" class="lvl-flash"></div>
     <div id="lvlToast" class="lvl-up-toast">
-        <div style="color: var(--gold); font-size: 1.2rem; font-weight: 900; letter-spacing: 2px;">LEVEL UP!</div>
-        <div id="lvlNew" style="color: #fff; font-size: 0.8rem; margin: 10px 0;">You reached Level --</div>
-        <div style="color: var(--teal); font-size: 0.6rem; font-style: italic;">Vitals Restored • Stats Increased</div>
-    </div>
-
-    <div id="fleeOverlay">
-        <div class="flee-msg">LEGENDS NEVER DIE...<br>GUESS YOU ARE NO LEGEND.</div>
-        <div class="flee-sub">Cowardice has a steep price. You must sacrifice 50 Gold to escape this encounter alive.</div>
-        <button class="btn" style="width: 100%; border-color: var(--red); color: var(--red); margin-bottom: 10px;" onclick="confirmFlee()">Pay -50 Gold to Run</button>
-        <button class="btn" style="width: 100%; border-color: #444; color: #fff;" onclick="closeFlee()">Stay and Fight</button>
+        <div style="color: var(--gold); font-size: 1.2rem; font-weight: 900;">LEVEL UP!</div>
+        <div id="lvlNew" style="color: #fff; margin: 10px 0;">You reached Level --</div>
     </div>
 
     <div id="godMenu">
         <div class="god-header">ADMIN COMMAND CENTER</div>
+        
         <div class="god-card">
-            <span class="god-label">Vitality & Stats</span>
-            <div class="god-stat" id="g-hp-mp">HP: 0 | MP: 0</div>
-            <div class="god-stat" id="g-base">Base Atk: 0 | Def: 0</div>
-            <button class="god-btn" style="width:100%; margin-top:8px; color:var(--teal)" onclick="godRestore()">Restore HP/MP</button>
+            <span class="god-label">Attribute Inspector (Base + Gear)</span>
+            <div class="god-stat"><span>HP:</span> <span class="stat-val" id="g-hp">0/0</span></div>
+            <div class="god-stat"><span>MP:</span> <span class="stat-val" id="g-mp">0/0</span></div>
+            <div class="god-stat"><span>EXP:</span> <span class="stat-val" id="g-xp-raw">0 / 0</span></div>
+            <div class="god-stat"><span>ATK:</span> <span><span class="stat-val" id="g-atk">0</span> <span class="gear-val" id="g-gatk">+0</span></span></div>
+            <div class="god-stat"><span>DEF:</span> <span><span class="stat-val" id="g-def">0</span> <span class="gear-val" id="g-gdef">+0</span></span></div>
+            <div class="god-stat"><span>LUCK:</span> <span class="stat-val" id="g-luck">0</span></div>
+            <button class="god-btn" style="width:100%; margin-top:8px; color:var(--teal)" onclick="godRestore()">Instant Full Restore</button>
         </div>
+
         <div class="god-card">
-            <span class="god-label">Adjustments</span>
+            <span class="god-label">Level & Progression Control</span>
+            <div class="god-stat"><span>Current Level:</span> <span class="stat-val" id="g-lvl">0</span></div>
             <div class="god-grid">
-                <button class="god-btn" onclick="godGold(500)">+500 Gold</button>
-                <button class="god-btn" onclick="godLevel(1)">Level +1</button>
+                <button class="god-btn" style="color:var(--teal)" onclick="godLevel(1)">Level Up (+1)</button>
+                <button class="god-btn" style="color:var(--red)" onclick="godLevel(-1)">Level Down (-1)</button>
+                <button class="god-btn" onclick="godGold(5000)">+5k Gold</button>
+                <button class="god-btn" onclick="godAddExp(50)">+50 EXP</button>
             </div>
         </div>
-        <button class="god-btn god-reset" onclick="godReset()">HARD RESET PROFILE</button>
-        <button class="god-btn" style="width:100%; margin-top:10px;" onclick="closeGodMenu()">Close God Menu</button>
-    </div>
 
-    <div id="deathOverlay">
-        <div class="death-text">YOUR SOUL IS MINE...</div>
+        <div class="god-card">
+            <span class="god-label">Combat Debug</span>
+            <div class="god-grid">
+                <button class="god-btn" onclick="godKillMonster()">Insta-Kill Target</button>
+                <button class="god-btn" onclick="godGivePotion('7')">Spawn HP Pot</button>
+                <button class="god-btn" onclick="godGivePotion('8')">Spawn MP Pot</button>
+            </div>
+        </div>
+
+        <button class="god-btn god-reset" onclick="godReset()">WIPE ALL PLAYER DATA</button>
+        <button class="god-btn" style="width:100%; margin-top:10px; border-color:#555;" onclick="closeGodMenu()">Exit Admin Menu</button>
     </div>
 
     <div class="top-nav">
@@ -149,38 +100,41 @@
 
     <div class="monster-area">
         <div id="mSprite" class="monster-sprite">🌑</div>
-        <div id="mMeta" style="font-size:0.6rem; color:#aaa; margin-bottom:5px; text-transform:uppercase; font-weight:bold;">SEARCHING...</div>
-        <div class="bar-wrap" style="width: 200px; height: 12px;">
+        <div id="mMeta" style="font-size:0.6rem; color:#aaa; font-weight:bold; text-transform:uppercase;">SEARCHING...</div>
+        <div class="bar-wrap" style="width: 200px; height: 12px; margin-top:5px;">
             <div id="mHPFill" class="bar-fill hp-fill" style="width:0%"></div>
         </div>
-        <div id="mHPText" style="font-size: 0.55rem; margin-top: 4px; font-weight: bold; color: var(--red);">---</div>
+        <div id="mHPText" style="font-size: 0.55rem; margin-top: 4px; color: var(--red); font-weight:bold;">---</div>
     </div>
 
-    <div class="combat-log" id="log">
-        <div style="color:var(--teal)">> System online.</div>
-    </div>
+    <div class="combat-log" id="log">> System online.</div>
 
     <div class="player-footer">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+            <div style="font-size: 0.45rem; color: var(--red); font-weight: bold; width: 15px;">HP</div>
+            <div class="bar-wrap" style="flex:1"><div id="pHPFill" class="bar-fill hp-fill"></div></div>
+            <div style="font-size: 0.45rem; color: var(--mana); font-weight: bold; width: 15px; margin-left: 5px;">MP</div>
+            <div class="bar-wrap" style="flex:1"><div id="pMPFill" class="bar-fill mp-fill"></div></div>
+        </div>
+        
         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
-            <div style="font-size: 0.5rem; color: var(--red); font-weight: bold; width: 15px;">HP</div>
-            <div class="bar-wrap" style="flex:1"><div id="pHPFill" class="bar-fill hp-fill" style="width: 100%"></div></div>
-            <div style="font-size: 0.5rem; color: var(--mana); font-weight: bold; width: 15px; margin-left: 5px;">MP</div>
-            <div class="bar-wrap" style="flex:1"><div id="pMPFill" class="bar-fill mp-fill" style="width: 100%"></div></div>
+            <div style="font-size: 0.45rem; color: var(--xp); font-weight: bold; width: 15px;">XP</div>
+            <div class="bar-wrap" style="flex:1; height: 4px;"><div id="pXPFill" class="bar-fill xp-fill"></div></div>
+            <div id="pXPText" style="font-size: 0.45rem; color: #888; font-family: monospace; min-width: 40px; text-align: right;">0/0</div>
         </div>
 
         <div class="grid-buttons" style="margin-bottom: 6px;">
-            <button class="btn" id="atkBtn" onclick="attack()" disabled>Standard Attack</button>
-            <button class="btn" id="skillBtn" onclick="useSkill()" disabled>Skill</button>
+            <button class="btn" id="atkBtn" onclick="doAttack()" disabled>Standard Attack</button>
+            <button class="btn" id="skillBtn" onclick="doSkill()" disabled>Skill</button>
         </div>
 
         <div class="grid-buttons">
-            <button class="btn" style="color:var(--red)" onclick="usePotion('7')">HP POT (<span id="hpCount">0</span>)</button>
-            <button class="btn" style="color:var(--mana)" onclick="usePotion('8')">MP POT (<span id="mpCount">0</span>)</button>
+            <button class="btn" style="color:var(--red)" onclick="doPotion('7')">HP POT (<span id="hpCount">0</span>)</button>
+            <button class="btn" style="color:var(--mana)" onclick="doPotion('8')">MP POT (<span id="mpCount">0</span>)</button>
             
             <div style="grid-column: span 2; margin-top: 4px;">
-                <button id="nextBtn" class="btn" style="width:100%; border-color:var(--teal); color: #fff;" onclick="attemptSpawn()">Explore Floor</button>
-                <button id="skipBtn" class="btn" style="width:100%; border-color:#444; color: #888; display: none;" onclick="skipMonster()">Find Next Enemy</button>
-                <button id="fleeBtn" class="btn" style="width:100%; border-color:var(--red); color: var(--red); display: none;" onclick="triggerFleeOverlay()">Flee Battle (-50G)</button>
+                <button id="nextBtn" class="btn" style="width:100%; border-color:var(--teal); color:#fff;" onclick="doSpawn()">Explore Floor</button>
+                <button id="skipBtn" class="btn" style="width:100%; border-color:#444; color:#888; display:none;" onclick="doSpawn()">Find Next Enemy</button>
             </div>
         </div>
     </div>
@@ -190,283 +144,56 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { initSecurity } from "./auth-guard.js";
     import { MONSTER_DATABASE } from "./monsters.js";
-    import { ITEM_LIBRARY } from "./items.js";
-    import { calculateCombatResult, rollRange, processLevelUp } from "./system.js";
+    import { calculateCombatResult, processLevelUp } from "./system.js";
+    import { CombatEngine } from "./battle.js";
 
-    const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin", appId: "1:1098142064736:web:002a76b2e1f8f7b22f6305" };
+    const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin" };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     const ADMIN_UID = "v6M5KflMjQam6M9LUeZym666fKw1";
     let pData = null;
-    let monster = null;
-    let isBusy = false;
-    let isBattleStarted = false;
     let godClicks = 0;
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
         if (!user) return;
-        await initSecurity(db, auth, user);
         onSnapshot(doc(db, "players", user.uid), (snap) => {
-            if (!snap.exists()) return;
             pData = snap.data();
+            CombatEngine.init(pData, db, auth, {
+                update: updateUI,
+                addLog: (m, c) => { 
+                    const l = document.getElementById('log');
+                    l.innerHTML += `<div style="color:${c}">> ${m}</div>`;
+                    l.scrollTop = l.scrollHeight;
+                },
+                clearLog: () => document.getElementById('log').innerHTML = "",
+                shake: (id) => { 
+                    const el = document.getElementById(id);
+                    if(el) { el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 200); }
+                },
+                onDeath: () => { window.location.href="wildlands.html"; },
+                onVictory: (data) => {
+                    if (processLevelUp(data)) {
+                        document.getElementById('lvlToast').style.display = 'block';
+                        document.getElementById('lvlNew').innerText = `You reached Level ${data.level}`;
+                        setTimeout(() => document.getElementById('lvlToast').style.display = 'none', 3000);
+                    }
+                }
+            });
             updateUI();
             if(document.getElementById('godMenu').style.display === 'block') refreshGodStats();
         });
     });
 
-    function refreshGodStats() {
-        if(!pData) return;
-        document.getElementById('g-hp-mp').innerText = `HP: ${Math.floor(pData.stats.hp)}/${pData.stats.maxHp} | MP: ${Math.floor(pData.stats.mana)}/${pData.stats.maxMana}`;
-        document.getElementById('g-base').innerText = `Base Atk: ${pData.stats.atk} | Def: ${pData.stats.def}`;
-    }
+    window.doSpawn = () => CombatEngine.generateMonster("THRESHOLD_OF_SOULS", MONSTER_DATABASE);
+    window.doAttack = () => CombatEngine.handleAttack(calculateCombatResult);
+    window.doSkill = () => CombatEngine.useSkill(calculateCombatResult);
+    window.doPotion = (id) => CombatEngine.usePotion(id);
+    window.handleRetreat = () => { window.location.href = "wildlands.html"; };
 
-    // --- NAVIGATION & FLEE LOGIC ---
-    window.handleRetreat = function() {
-        if (!monster) { window.location.href = "wildlands.html"; return; }
-        if (isBattleStarted) { triggerFleeOverlay(); } 
-        else { window.location.href = "wildlands.html"; }
-    };
-
-    window.triggerFleeOverlay = () => { document.getElementById('fleeOverlay').style.display = 'flex'; };
-    window.closeFlee = () => { document.getElementById('fleeOverlay').style.display = 'none'; };
-
-    window.confirmFlee = async function() {
-        if (isBusy || !pData) return;
-        isBusy = true;
-        const currentGold = Number(pData.gold) || 0;
-        pData.gold = Math.max(0, currentGold - 50);
-        addLog("Fleeing encounter... -50 Gold.", "var(--red)");
-        await sync();
-        setTimeout(() => { window.location.href = "wildlands.html"; }, 800);
-    };
-
-    // --- SPAWNING LOGIC ---
-    window.attemptSpawn = function() {
-        if (!pData || isBusy || monster) return;
-        isBattleStarted = false; 
-        generateMonster();
-    };
-
-    window.skipMonster = function() {
-        if (isBusy || isBattleStarted) return;
-        monster = null;
-        generateMonster();
-    };
-
-    function generateMonster() {
-        document.getElementById('log').innerHTML = "";
-        const playerLvl = Number(pData.level) || 1;
-        const zonePool = Object.values(MONSTER_DATABASE["THRESHOLD_OF_SOULS"]);
-        
-        let filteredPool = zonePool.filter(m => m.level <= (playerLvl + 2));
-        if (filteredPool.length === 0) {
-            filteredPool = zonePool.sort((a, b) => a.level - playerLvl).slice(0, 3);
-        }
-
-        const selected = filteredPool[Math.floor(Math.random() * filteredPool.length)];
-        if (selected) {
-            monster = JSON.parse(JSON.stringify(selected)); 
-            monster.curHp = Number(monster.hp);
-            monster.level = Number(monster.level) || 1;
-            monster.xp = Number(monster.xp) || (monster.level * 25);
-            monster.gold = Number(monster.gold) || (monster.level * 10);
-            addLog(`Manifested ${monster.name}! (Level ${monster.level})`, "#eee");
-        }
-        updateUI();
-    }
-
-    // --- COMBAT ACTIONS ---
-    window.attack = function() {
-        if (!monster || isBusy) return;
-        isBusy = true;
-        isBattleStarted = true; 
-        
-        let gearAtk = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (Number(i.atk) || 0); });
-        const result = calculateCombatResult((Number(pData.stats?.atk) || 10) + gearAtk, Number(monster.def), Number(pData.stats?.luck) || 0);
-        
-        if (!result.isMiss) {
-            monster.curHp -= result.damage;
-            addLog(`Hit for ${result.damage} DMG.`, result.isCrit ? "var(--gold)" : "var(--teal)");
-            triggerShake('mSprite', false);
-        } else {
-            addLog(`Missed!`, "#555");
-        }
-        
-        if (monster.curHp <= 0) setTimeout(handleVictory, 400);
-        else setTimeout(monsterTurn, 600);
-        updateUI();
-    };
-
-    window.useSkill = async function() {
-        if (!monster || isBusy || !pData.skills?.length) return;
-        const manaCost = 15;
-        if (pData.stats.mana < manaCost) { addLog("Low MP!", "var(--mana)"); return; }
-        
-        isBusy = true;
-        isBattleStarted = true;
-        pData.stats.mana -= manaCost;
-        
-        let gearAtk = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearAtk += (Number(i.atk) || 0); });
-        const result = calculateCombatResult(Math.floor(((Number(pData.stats.atk) || 10) + gearAtk) * 1.8), Number(monster.def), (Number(pData.stats.luck) || 0) + 5);
-        
-        addLog(`Cast ${pData.skills[0]}!`, "var(--mana)");
-        if (!result.isMiss) {
-            monster.curHp -= result.damage;
-            addLog(`Skill deals ${result.damage} DMG.`, "var(--teal)");
-            triggerShake('mSprite', false);
-        }
-        if (monster.curHp <= 0) setTimeout(handleVictory, 400);
-        else setTimeout(monsterTurn, 600);
-        updateUI();
-        await sync();
-    };
-
-    window.usePotion = async function(id) {
-        if (!pData || isBusy) return;
-        const idx = (pData.inventory || []).findIndex(i => i.id === id);
-        if (idx === -1) { addLog("No potions!", "var(--red)"); return; }
-        const item = pData.inventory[idx];
-        if (id === '7') pData.stats.hp = Math.min(pData.stats.maxHp, pData.stats.hp + (Number(item.heal) || 50));
-        else pData.stats.mana = Math.min(pData.stats.maxMana, pData.stats.mana + (Number(item.restore) || 30));
-        pData.inventory.splice(idx, 1);
-        updateUI();
-        await sync();
-    };
-
-    function monsterTurn() {
-        if (!monster) { isBusy = false; return; }
-        let gearDef = 0;
-        (pData.inventory || []).forEach(i => { if(i.equipped) gearDef += (Number(i.def) || 0); });
-        const mAtk = rollRange(Number(monster.atkMin), Number(monster.atkMax));
-        const result = calculateCombatResult(mAtk, (Number(pData.stats.def) || 5) + gearDef, 0);
-        if (!result.isMiss) {
-            pData.stats.hp = Math.max(0, pData.stats.hp - result.damage);
-            addLog(`${monster.name} deals ${result.damage} DMG.`, "var(--red)");
-            triggerShake('mainScene', false);
-        }
-        isBusy = false;
-        if (pData.stats.hp <= 0) handleDeath();
-        else { sync(); updateUI(); }
-    }
-
-    async function handleVictory() {
-        if (!monster) return;
-
-        const xpGained = Math.floor(Number(monster.xp) || 0);
-        const goldGained = Math.floor(Number(monster.gold) || 0);
-
-        addLog(`Victory! +${xpGained} XP`, "var(--gold)");
-        
-        pData.exp = (Number(pData.exp) || 0) + xpGained;
-        pData.gold = (Number(pData.gold) || 0) + goldGained;
-        
-        // Pass to level up processor - Check if it returned true
-        const didLevel = processLevelUp(pData);
-        if (didLevel) {
-            showLevelUpUI(pData.level);
-        }
-        
-        if (pData.activeQuest && !pData.activeQuest.isCompleted) {
-            if (pData.activeQuest.target === monster.name || pData.activeQuest.target === "ANY") {
-                pData.activeQuest.progress = (Number(pData.activeQuest.progress) || 0) + 1;
-                if (pData.activeQuest.progress >= pData.activeQuest.goalAmount) pData.activeQuest.isCompleted = true;
-            }
-        }
-
-        monster = null;
-        isBattleStarted = false;
-        isBusy = false;
-        await sync();
-        setTimeout(() => { updateUI(); }, 800);
-    }
-
-    // UI Helper for Level Up
-    function showLevelUpUI(newLvl) {
-        const toast = document.getElementById('lvlToast');
-        const flash = document.getElementById('lvlFlash');
-        document.getElementById('lvlNew').innerText = `You reached Level ${newLvl}`;
-        
-        flash.classList.add('flash-anim');
-        setTimeout(() => flash.classList.remove('flash-anim'), 600);
-
-        toast.style.display = 'block';
-        addLog(`ASCENSION: You are now Level ${newLvl}!`, "var(--gold)");
-
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 3000);
-    }
-
-    function handleDeath() {
-        isBusy = true;
-        document.getElementById('deathOverlay').style.display = 'flex';
-        setTimeout(() => { window.location.href = "wildlands.html"; }, 3000);
-    }
-
-    function updateUI() {
-        if (!pData) return;
-        document.getElementById('pLevel').innerText = `LVL ${pData.level || 1}`;
-        const hasMonster = !!monster;
-        document.getElementById('atkBtn').disabled = !hasMonster || isBusy;
-        const skillBtn = document.getElementById('skillBtn');
-        if (pData.skills?.length) {
-            skillBtn.innerText = `${pData.skills[0]} (15MP)`;
-            skillBtn.disabled = !hasMonster || isBusy || pData.stats.mana < 15;
-        }
-
-        if (!hasMonster) {
-            document.getElementById('nextBtn').style.display = 'block';
-            document.getElementById('skipBtn').style.display = 'none';
-            document.getElementById('fleeBtn').style.display = 'none';
-        } else {
-            document.getElementById('nextBtn').style.display = 'none';
-            if (isBattleStarted) {
-                document.getElementById('skipBtn').style.display = 'none';
-                document.getElementById('fleeBtn').style.display = 'block';
-            } else {
-                document.getElementById('skipBtn').style.display = 'block';
-                document.getElementById('fleeBtn').style.display = 'none';
-            }
-        }
-
-        if (monster) {
-            document.getElementById('mHPFill').style.width = (monster.curHp / monster.hp) * 100 + "%";
-            document.getElementById('mHPText').innerText = `${Math.floor(monster.curHp)} / ${monster.hp}`;
-            document.getElementById('mSprite').innerText = monster.emoji || "👾";
-            document.getElementById('mMeta').innerText = `${monster.name} (LVL ${monster.level})`;
-        } else {
-            document.getElementById('mHPFill').style.width = "0%";
-            document.getElementById('mHPText').innerText = "---";
-            document.getElementById('mSprite').innerText = "🌑";
-            document.getElementById('mMeta').innerText = "SEARCHING...";
-        }
-
-        document.getElementById('pHPFill').style.width = (pData.stats.hp / pData.stats.maxHp) * 100 + "%";
-        document.getElementById('pMPFill').style.width = (pData.stats.mana / pData.stats.maxMana) * 100 + "%";
-        document.getElementById('hpCount').innerText = (pData.inventory || []).filter(i => i.id === "7").length;
-        document.getElementById('mpCount').innerText = (pData.inventory || []).filter(i => i.id === "8").length;
-    }
-
-    async function sync() { if (auth.currentUser) await updateDoc(doc(db, "players", auth.currentUser.uid), pData); }
-    
-    function addLog(msg, color) {
-        const l = document.getElementById('log');
-        l.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
-        l.scrollTop = l.scrollHeight;
-    }
-    
-    function triggerShake(id, permanent) {
-        const el = document.getElementById(id);
-        if (el) { el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 200); }
-    }
-
-    // --- ADMIN TOOLS ---
+    // --- ENHANCED ADMIN LOGIC ---
     window.godTrigger = () => { 
         if(auth.currentUser?.uid === ADMIN_UID) { 
             godClicks++; 
@@ -478,28 +205,132 @@
         }
     };
     window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
-    window.godRestore = async () => { pData.stats.hp = pData.stats.maxHp; pData.stats.mana = pData.stats.maxMana; await sync(); refreshGodStats(); };
-    window.godGold = async (v) => { pData.gold = (Number(pData.gold) || 0) + v; await sync(); };
+
     window.godLevel = async (v) => { 
-        pData.level = (Number(pData.level) || 1) + v; 
-        pData.stats.maxHp += 25; // Manual bump for admin
+        const newLvl = Math.max(1, (Number(pData.level) || 1) + v);
+        pData.level = newLvl;
+        pData.exp = 0; // Reset exp when manually shifting levels for testing
+        
+        // Full scaling
+        pData.stats.maxHp = 100 + (newLvl - 1) * 25;
+        pData.stats.maxMana = 50 + (newLvl - 1) * 15;
+        pData.stats.atk = 10 + (newLvl - 1) * 2;
+        pData.stats.def = 5 + (newLvl - 1) * 2;
+        
         pData.stats.hp = pData.stats.maxHp;
-        await sync(); 
+        pData.stats.mana = pData.stats.maxMana;
+        
+        await CombatEngine.sync(); 
+        refreshGodStats();
     };
-    
-    window.godReset = async () => {
-        if(confirm("PERMANENT DATA WIPE?")) {
-            const resetData = {
-                level: 1, exp: 0, gold: 0, shards: 0, inventory: [], activeQuest: null,
-                "stats.hp": 100, "stats.maxHp": 100, "stats.mana": 50, "stats.maxMana": 50,
-                "stats.atk": 10, "stats.def": 10, "stats.luck": 5
-            };
-            try {
-                await updateDoc(doc(db, "players", auth.currentUser.uid), resetData);
-                location.reload();
-            } catch (e) { console.error(e); }
+
+    window.godAddExp = async (v) => {
+        pData.exp = (Number(pData.exp) || 0) + v;
+        // Check for level up in god mode too
+        const target = pData.level * 100;
+        if(pData.exp >= target) {
+            await godLevel(1);
+        } else {
+            await CombatEngine.sync();
         }
     };
+
+    window.godRestore = async () => { 
+        pData.stats.hp = pData.stats.maxHp; 
+        pData.stats.mana = pData.stats.maxMana; 
+        await CombatEngine.sync(); 
+        refreshGodStats();
+    };
+
+    window.godGold = async (v) => { 
+        pData.gold = (Number(pData.gold) || 0) + v; 
+        await CombatEngine.sync(); 
+    };
+
+    window.godKillMonster = () => {
+        if(CombatEngine.monster) {
+            CombatEngine.monster.curHp = 0;
+            CombatEngine.handleVictory();
+        }
+    };
+
+    window.godGivePotion = async (id) => {
+        const item = id === '7' ? {id: '7', name: 'HP Potion', heal: 50} : {id: '8', name: 'MP Potion', restore: 30};
+        pData.inventory = pData.inventory || [];
+        pData.inventory.push(item);
+        await CombatEngine.sync();
+    };
+
+    window.godReset = async () => {
+        if(confirm("PERMANENT DATA WIPE?")) {
+            const resetData = { level: 1, exp: 0, gold: 0, inventory: [], stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 5, luck: 0 }};
+            await updateDoc(doc(db, "players", auth.currentUser.uid), resetData);
+            location.reload();
+        }
+    };
+
+    function refreshGodStats() {
+        if(!pData) return;
+        const target = pData.level * 100;
+        let gearAtk = 0, gearDef = 0;
+        (pData.inventory || []).forEach(item => {
+            if(item.equipped) {
+                gearAtk += (Number(item.atk) || 0);
+                gearDef += (Number(item.def) || 0);
+            }
+        });
+
+        document.getElementById('g-hp').innerText = `${Math.floor(pData.stats.hp)}/${pData.stats.maxHp}`;
+        document.getElementById('g-mp').innerText = `${Math.floor(pData.stats.mana)}/${pData.stats.maxMana}`;
+        document.getElementById('g-xp-raw').innerText = `${pData.exp} / ${target}`;
+        document.getElementById('g-atk').innerText = pData.stats.atk;
+        document.getElementById('g-gatk').innerText = `+${gearAtk}`;
+        document.getElementById('g-def').innerText = pData.stats.def;
+        document.getElementById('g-gdef').innerText = `+${gearDef}`;
+        document.getElementById('g-luck').innerText = pData.stats.luck || 0;
+        document.getElementById('g-lvl').innerText = pData.level;
+    }
+
+    function updateUI() {
+        if (!pData) return;
+        const target = pData.level * 100;
+        
+        document.getElementById('pLevel').innerText = `LVL ${pData.level}`;
+        document.getElementById('pHPFill').style.width = (pData.stats.hp / pData.stats.maxHp) * 100 + "%";
+        document.getElementById('pMPFill').style.width = (pData.stats.mana / pData.stats.maxMana) * 100 + "%";
+        
+        // Update EXP Bar
+        document.getElementById('pXPFill').style.width = (pData.exp / target) * 100 + "%";
+        document.getElementById('pXPText').innerText = `${pData.exp}/${target}`;
+        
+        document.getElementById('hpCount').innerText = (pData.inventory || []).filter(i => i.id === "7").length;
+        document.getElementById('mpCount').innerText = (pData.inventory || []).filter(i => i.id === "8").length;
+
+        const m = CombatEngine.monster;
+        const skillBtn = document.getElementById('skillBtn');
+        if (pData.skills?.length) {
+            skillBtn.innerText = `${pData.skills[0]} (15MP)`;
+            skillBtn.disabled = !m || CombatEngine.isBusy || pData.stats.mana < 15;
+        }
+
+        if (m) {
+            document.getElementById('mHPFill').style.width = (m.curHp / m.hp) * 100 + "%";
+            document.getElementById('mHPText').innerText = `${Math.floor(m.curHp)} / ${m.hp}`;
+            document.getElementById('mMeta').innerText = `${m.name} (LVL ${m.level})`;
+            document.getElementById('mSprite').innerText = m.emoji;
+            document.getElementById('atkBtn').disabled = CombatEngine.isBusy;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('skipBtn').style.display = CombatEngine.isBattleStarted ? 'none' : 'block';
+        } else {
+            document.getElementById('mHPFill').style.width = "0%";
+            document.getElementById('mHPText').innerText = "---";
+            document.getElementById('mMeta').innerText = "SEARCHING...";
+            document.getElementById('mSprite').innerText = "🌑";
+            document.getElementById('atkBtn').disabled = true;
+            document.getElementById('nextBtn').style.display = 'block';
+            document.getElementById('skipBtn').style.display = 'none';
+        }
+    }
 </script>
 </body>
 </html>

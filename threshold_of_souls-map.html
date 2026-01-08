@@ -5,138 +5,157 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Threshold of Souls - Combat</title>
     <style>
-        :root { --teal: #62ffe1; --red: #ff4444; --gold: #ffcc00; --bg: #050505; --mana: #22ccff; --xp: #bb66ff; }
-        body { background: #000; margin: 0; display: flex; justify-content: center; height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; }
-        .scene { width: 400px; height: 100dvh; position: relative; display: flex; flex-direction: column; background: #050505; border-left: 1px solid #111; border-right: 1px solid #111; }
+        :root { 
+            --teal: #62ffe1; --red: #ff4444; --gold: #ffcc00; 
+            --bg: #050505; --mana: #22ccff; --xp: #bb66ff; 
+        }
+        body { 
+            background: #000; margin: 0; display: flex; justify-content: center; 
+            height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; 
+        }
         
-        /* Level Up Toast */
-        .lvl-up-toast { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid var(--gold); padding: 20px; z-index: 10002; text-align: center; width: 260px; display: none; box-shadow: 0 0 20px rgba(255,204,0,0.4); }
+        .scene { 
+            width: 400px; height: 100dvh; position: relative; 
+            display: flex; flex-direction: column; background: var(--bg); 
+            border-left: 1px solid #111; border-right: 1px solid #111; 
+        }
 
-        /* ADVANCED GOD MENU */
-        #godMenu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 10000; display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; border: 2px solid var(--gold); }
-        .god-header { color: var(--gold); font-size: 0.9rem; font-weight: 900; text-align: center; margin-bottom: 15px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        /* Top Header Line */
+        .top-nav { 
+            padding: 10px 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid var(--red);
+        }
+
+        /* Enemy Display Area */
+        .combat-area { 
+            padding: 15px 0;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        /* Battle Log (Yellow Box - Shrunk and Fixed) */
+        .log-area { 
+            height: 100px; 
+            background: #020202; 
+            padding: 10px 15px; 
+            font-size: 0.75rem; 
+            overflow-y: auto; 
+            font-family: monospace; 
+            border-top: 1px solid #111;
+            border-bottom: 1px solid #111;
+        }
+
+        /* Stats & Actions (Blue Box - Moved up) */
+        .footer-ui { 
+            padding: 15px; 
+            background: #080808; 
+            flex-grow: 0; 
+        }
+
+        /* Footer Line Thingy at the end of the action area */
+        .action-bottom-line {
+            border-bottom: 2px solid #1a1a1a;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; width: 100%; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .bar-wrap { width: 100%; height: 8px; background: #111; border: 1px solid #222; margin: 4px 0; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+
+        /* GOD MODE STYLES */
+        #godMenu { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.98); z-index: 1000; display: none; 
+            padding: 20px; box-sizing: border-box; 
+            border: 2px solid var(--gold); 
+            overflow-y: auto;
+        }
         .god-card { background: #111; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-        .god-label { font-size: 0.55rem; color: #888; text-transform: uppercase; display: block; margin-bottom: 6px; font-weight: bold; }
-        .god-stat { font-size: 0.65rem; color: #fff; margin-bottom: 4px; font-family: monospace; display: flex; justify-content: space-between;}
-        .stat-val { color: var(--teal); }
-        .gear-val { color: var(--gold); font-size: 0.6rem; }
-        .god-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
-        .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 10px 4px; font-size: 0.6rem; cursor: pointer; text-transform: uppercase; font-weight: bold; border-radius: 2px; }
-        .god-btn:hover { border-color: var(--teal); }
-        .god-btn:active { background: var(--teal); color: #000; }
-        .god-reset { background: #300 !important; border-color: #f44 !important; color: #ff4444 !important; margin-top: 15px; width: 100%; }
-
-        /* UI Elements */
-        .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #000; border-bottom: 1px solid #1a1a1a; }
-        .map-title { font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; color: #fff; text-transform: uppercase; cursor: pointer; }
-        .monster-area { padding: 15px 0; display: flex; flex-direction: column; align-items: center; background: radial-gradient(circle at center, #0a0a0a 0%, #050505 100%); }
-        .monster-sprite { font-size: 3.5rem; margin-bottom: 8px; }
-        .combat-log { height: 100px; padding: 10px 15px; font-size: 0.65rem; color: #888; overflow-y: auto; font-family: 'monospace'; background: #020202; border-top: 1px solid #111; border-bottom: 1px solid #111; }
-        .player-footer { background: #080808; padding: 12px 15px; }
-        .bar-wrap { width: 100%; height: 8px; background: #111; border: 1px solid #222; position: relative; overflow: hidden; }
-        .bar-fill { height: 100%; transition: width 0.3s ease; }
-        .hp-fill { background: var(--red); }
-        .mp-fill { background: var(--mana); }
-        .xp-fill { background: var(--xp); }
-        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px 5px; font-size: 0.6rem; font-weight: 800; cursor: pointer; text-transform: uppercase; border-radius: 2px; }
-        .btn:disabled { opacity: 0.15; pointer-events: none; }
-
-        .shake { animation: shake 0.15s ease-in-out; }
-        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(4px,0); } 75% { transform: translate(-4px,0); } }
+        .god-row { display: flex; gap: 8px; margin: 4px 0; }
+        .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 10px; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; }
     </style>
 </head>
 <body>
 
 <div class="scene" id="mainScene">
-    <div id="lvlToast" class="lvl-up-toast">
-        <div style="color: var(--gold); font-size: 1.2rem; font-weight: 900;">LEVEL UP!</div>
-        <div id="lvlNew" style="color: #fff; margin: 10px 0;">You reached Level --</div>
-    </div>
-
     <div id="godMenu">
-        <div class="god-header">ADMIN COMMAND CENTER</div>
+        <div style="color:var(--gold); text-align:center; font-weight:900; margin-bottom:15px;">DIVINE CONSOLE</div>
         
-        <div class="god-card">
-            <span class="god-label">Attribute Inspector (Base + Gear)</span>
-            <div class="god-stat"><span>HP:</span> <span class="stat-val" id="g-hp">0/0</span></div>
-            <div class="god-stat"><span>MP:</span> <span class="stat-val" id="g-mp">0/0</span></div>
-            <div class="god-stat"><span>EXP:</span> <span class="stat-val" id="g-xp-raw">0 / 0</span></div>
-            <div class="god-stat"><span>ATK:</span> <span><span class="stat-val" id="g-atk">0</span> <span class="gear-val" id="g-gatk">+0</span></span></div>
-            <div class="god-stat"><span>DEF:</span> <span><span class="stat-val" id="g-def">0</span> <span class="gear-val" id="g-gdef">+0</span></span></div>
-            <div class="god-stat"><span>LUCK:</span> <span class="stat-val" id="g-luck">0</span></div>
-            <button class="god-btn" style="width:100%; margin-top:8px; color:var(--teal)" onclick="godRestore()">Instant Full Restore</button>
-        </div>
+        <div class="god-card" id="godStatsDisplay"></div>
 
         <div class="god-card">
-            <span class="god-label">Level & Progression Control</span>
-            <div class="god-stat"><span>Current Level:</span> <span class="stat-val" id="g-lvl">0</span></div>
-            <div class="god-grid">
-                <button class="god-btn" style="color:var(--teal)" onclick="godLevel(1)">Level Up (+1)</button>
-                <button class="god-btn" style="color:var(--red)" onclick="godLevel(-1)">Level Down (-1)</button>
-                <button class="god-btn" onclick="godGold(5000)">+5k Gold</button>
-                <button class="god-btn" onclick="godAddExp(50)">+50 EXP</button>
+            <div style="font-size: 0.6rem; color: var(--teal); margin-bottom: 5px;">MONSTER SPAWNER</div>
+            <div class="god-row">
+                <select id="godMonsterSelect" style="flex: 2; background: #000; color: #fff; border: 1px solid #444; font-size: 0.7rem;"></select>
+                <button id="godSpawnBtn" class="god-btn" style="flex: 1; border-color: var(--teal);">SPAWN</button>
             </div>
         </div>
 
         <div class="god-card">
-            <span class="god-label">Combat Debug</span>
-            <div class="god-grid">
-                <button class="god-btn" onclick="godKillMonster()">Insta-Kill Target</button>
-                <button class="god-btn" onclick="godGivePotion('7')">Spawn HP Pot</button>
-                <button class="god-btn" onclick="godGivePotion('8')">Spawn MP Pot</button>
+            <button class="god-btn" id="godHeal" style="color:var(--teal); margin-bottom:8px;">Instant Restore</button>
+            <div class="god-row">
+                <button class="god-btn" id="godLevelUp" style="color:var(--gold)">Level +1</button>
+                <button class="god-btn" id="godLevelDown">Level -1</button>
+            </div>
+            <div class="god-row">
+                <button class="god-btn" id="godAddGold">+5K Gold</button>
+                <button class="god-btn" id="godSubGold">-5K Gold</button>
             </div>
         </div>
-
-        <button class="god-btn god-reset" onclick="godReset()">WIPE ALL PLAYER DATA</button>
-        <button class="god-btn" style="width:100%; margin-top:10px; border-color:#555;" onclick="closeGodMenu()">Exit Admin Menu</button>
+        
+        <button class="god-btn" id="godHardReset" style="background:#400; border-color:var(--red); color:white; margin-top:10px;">Hard Player Reset</button>
+        <button class="god-btn" id="closeGod" style="border-color:#555; margin-top:20px;">Exit Console</button>
     </div>
 
     <div class="top-nav">
-        <a href="javascript:void(0)" onclick="handleRetreat()" style="color:var(--teal); text-decoration:none; font-size:0.6rem; font-weight:bold;">← RETREAT</a>
-        <span class="map-title" onclick="godTrigger()">Threshold of Souls</span>
-        <span id="pLevel" style="color:var(--teal); font-size:0.7rem; font-weight:bold;">LVL --</span>
+        <div id="retreatLink" style="color: var(--teal); cursor: pointer; font-size: 0.7rem;">← RETREAT</div>
+        <div id="mapTitle" style="font-size: 0.7rem; font-weight: bold; cursor: pointer;">THRESHOLD OF SOULS</div>
+        <div id="pLevel" style="color: var(--teal); font-weight: bold;">LVL --</div>
     </div>
 
-    <div class="monster-area">
-        <div id="mSprite" class="monster-sprite">🌑</div>
-        <div id="mMeta" style="font-size:0.6rem; color:#aaa; font-weight:bold; text-transform:uppercase;">SEARCHING...</div>
-        <div class="bar-wrap" style="width: 200px; height: 12px; margin-top:5px;">
-            <div id="mHPFill" class="bar-fill hp-fill" style="width:0%"></div>
-        </div>
-        <div id="mHPText" style="font-size: 0.55rem; margin-top: 4px; color: var(--red); font-weight:bold;">---</div>
+    <div class="combat-area">
+        <div id="mSprite" style="font-size: 3rem; margin-bottom: 5px;">🌑</div>
+        <div id="mName" style="font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Searching...</div>
+        <div class="bar-wrap" style="width: 50%;"><div id="mHPFill" class="bar-fill" style="background: var(--red);"></div></div>
+        <div id="mHPText" style="font-size: 0.55rem; color: #666;">0 / 0</div>
     </div>
 
-    <div class="combat-log" id="log">> System online.</div>
+    <div class="log-area" id="combatLog">
+        <div>> System online.</div>
+    </div>
 
-    <div class="player-footer">
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
-            <div style="font-size: 0.45rem; color: var(--red); font-weight: bold; width: 15px;">HP</div>
-            <div class="bar-wrap" style="flex:1"><div id="pHPFill" class="bar-fill hp-fill"></div></div>
-            <div style="font-size: 0.45rem; color: var(--mana); font-weight: bold; width: 15px; margin-left: 5px;">MP</div>
-            <div class="bar-wrap" style="flex:1"><div id="pMPFill" class="bar-fill mp-fill"></div></div>
-        </div>
-        
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
-            <div style="font-size: 0.45rem; color: var(--xp); font-weight: bold; width: 15px;">XP</div>
-            <div class="bar-wrap" style="flex:1; height: 4px;"><div id="pXPFill" class="bar-fill xp-fill"></div></div>
-            <div id="pXPText" style="font-size: 0.45rem; color: #888; font-family: monospace; min-width: 40px; text-align: right;">0/0</div>
-        </div>
-
-        <div class="grid-buttons" style="margin-bottom: 6px;">
-            <button class="btn" id="atkBtn" onclick="doAttack()" disabled>Standard Attack</button>
-            <button class="btn" id="skillBtn" onclick="doSkill()" disabled>Skill</button>
-        </div>
-
-        <div class="grid-buttons">
-            <button class="btn" style="color:var(--red)" onclick="doPotion('7')">HP POT (<span id="hpCount">0</span>)</button>
-            <button class="btn" style="color:var(--mana)" onclick="doPotion('8')">MP POT (<span id="mpCount">0</span>)</button>
+    <div class="footer-ui">
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--red);"><span>HP</span><span id="pHPText">0/0</span></div>
+            <div class="bar-wrap"><div id="pHPFill" class="bar-fill" style="background: var(--red);"></div></div>
             
-            <div style="grid-column: span 2; margin-top: 4px;">
-                <button id="nextBtn" class="btn" style="width:100%; border-color:var(--teal); color:#fff;" onclick="doSpawn()">Explore Floor</button>
-                <button id="skipBtn" class="btn" style="width:100%; border-color:#444; color:#888; display:none;" onclick="doSpawn()">Find Next Enemy</button>
-            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--mana); margin-top: 5px;"><span>MP</span><span id="pMPText">0/0</span></div>
+            <div class="bar-wrap"><div id="pMPFill" class="bar-fill" style="background: var(--mana);"></div></div>
+            
+            <div class="bar-wrap" style="height: 4px; margin-top:5px;"><div id="pXPFill" class="bar-fill" style="background: var(--xp);"></div></div>
         </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button id="atkBtn" class="btn" disabled>Standard Attack</button>
+            <button id="skillBtn" class="btn" disabled>Start Shadow (15MP)</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button id="useHPPot" class="btn" style="color:var(--red); padding: 8px; font-size:0.6rem;">HP POT (0)</button>
+            <button id="useMPPot" class="btn" style="color:var(--mana); padding: 8px; font-size:0.6rem;">MP POT (0)</button>
+        </div>
+
+        <button id="spawnBtn" class="btn" style="border-color: var(--teal);">Explore Floor</button>
+        
+        <div class="action-bottom-line"></div>
     </div>
 </div>
 
@@ -144,200 +163,117 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { MONSTER_DATABASE } from "./monsters.js";
-    import { calculateCombatResult, processLevelUp } from "./system.js";
+    
+    import { GodMode } from "./Godmode.js";
     import { CombatEngine } from "./battle.js";
+    import { calculateCombatResult, getRequiredXP } from "./system.js";
 
-    const firebaseConfig = { apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", authDomain: "sovereigns-of-ruin.firebaseapp.com", projectId: "sovereigns-of-ruin" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCfYnzHzZ82Qdvxsd2U4bSKpDwrQ8g2WuM", 
+        authDomain: "sovereigns-of-ruin.firebaseapp.com", 
+        projectId: "sovereigns-of-ruin" 
+    };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const ADMIN_UID = "v6M5KflMjQam6M9LUeZym666fKw1";
-    let pData = null;
-    let godClicks = 0;
+    let player = null;
 
     onAuthStateChanged(auth, (user) => {
-        if (!user) return;
-
+        if (!user) { window.location.href = "login.html"; return; }
         onSnapshot(doc(db, "players", user.uid), (snap) => {
-            const newData = snap.data();
-            
-            // If we are busy in a battle or just finished one, 
-            // don't let the DB overwrite our local XP/HP calculations 
-            // until the sync is confirmed.
-            if (CombatEngine.isBusy) return; 
-
-            pData = newData;
-            CombatEngine.init(pData, db, auth, {
+            if (!snap.exists()) return;
+            player = snap.data();
+            GodMode.init(player, db, auth);
+            CombatEngine.init(player, db, auth, {
                 update: updateUI,
-                addLog: (m, c) => { 
-                    const l = document.getElementById('log');
-                    l.innerHTML += `<div style="color:${c}">> ${m}</div>`;
-                    l.scrollTop = l.scrollHeight;
-                },
-                clearLog: () => document.getElementById('log').innerHTML = "",
-                shake: (id) => { 
-                    const el = document.getElementById(id);
-                    if(el) { el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'), 200); }
-                },
-                onDeath: () => { window.location.href="wildlands.html"; },
-                onVictory: (data) => {
-                    if (processLevelUp(data)) {
-                        document.getElementById('lvlToast').style.display = 'block';
-                        document.getElementById('lvlNew').innerText = `You reached Level ${data.level}`;
-                        setTimeout(() => document.getElementById('lvlToast').style.display = 'none', 3000);
+                addLog: (msg, color) => {
+                    const log = document.getElementById('combatLog');
+                    if(log) {
+                        log.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+                        log.scrollTop = log.scrollHeight;
                     }
-                }
+                },
+                clearLog: () => { 
+                    const log = document.getElementById('combatLog');
+                    if(log) log.innerHTML = ""; 
+                },
+                onDeath: () => { window.location.href = "wildlands.html"; }
             });
             updateUI();
-            if(document.getElementById('godMenu').style.display === 'block') refreshGodStats();
         });
     });
 
-    window.doSpawn = () => CombatEngine.generateMonster("THRESHOLD_OF_SOULS", MONSTER_DATABASE);
-    window.doAttack = () => CombatEngine.handleAttack(calculateCombatResult);
-    window.doSkill = () => CombatEngine.useSkill(calculateCombatResult);
-    window.doPotion = (id) => CombatEngine.usePotion(id);
-    window.handleRetreat = () => { window.location.href = "wildlands.html"; };
-
-    // --- ENHANCED ADMIN LOGIC ---
-    window.godTrigger = () => { 
-        if(auth.currentUser?.uid === ADMIN_UID) { 
-            godClicks++; 
-            if(godClicks >= 5) { 
-                document.getElementById('godMenu').style.display = 'block'; 
-                refreshGodStats();
-                godClicks = 0; 
-            }
-        }
-    };
-    window.closeGodMenu = () => document.getElementById('godMenu').style.display = 'none';
-
-    window.godLevel = async (v) => { 
-        const newLvl = Math.max(1, (Number(pData.level) || 1) + v);
-        pData.level = newLvl;
-        pData.exp = 0; // Reset exp when manually shifting levels for testing
-        
-        // Full scaling
-        pData.stats.maxHp = 100 + (newLvl - 1) * 25;
-        pData.stats.maxMana = 50 + (newLvl - 1) * 15;
-        pData.stats.atk = 10 + (newLvl - 1) * 2;
-        pData.stats.def = 5 + (newLvl - 1) * 2;
-        
-        pData.stats.hp = pData.stats.maxHp;
-        pData.stats.mana = pData.stats.maxMana;
-        
-        await CombatEngine.sync(); 
-        refreshGodStats();
-    };
-
-    window.godAddExp = async (v) => {
-        pData.exp = (Number(pData.exp) || 0) + v;
-        const target = pData.level * 100;
-        if(pData.exp >= target) {
-            await godLevel(1);
-        } else {
-            await CombatEngine.sync();
-        }
-    };
-
-    window.godRestore = async () => { 
-        pData.stats.hp = pData.stats.maxHp; 
-        pData.stats.mana = pData.stats.maxMana; 
-        await CombatEngine.sync(); 
-        refreshGodStats();
-    };
-
-    window.godGold = async (v) => { 
-        pData.gold = (Number(pData.gold) || 0) + v; 
-        await CombatEngine.sync(); 
-    };
-
-    window.godKillMonster = () => {
-        if(CombatEngine.monster) {
-            CombatEngine.monster.curHp = 0;
-            CombatEngine.handleVictory();
-        }
-    };
-
-    window.godGivePotion = async (id) => {
-        const item = id === '7' ? {id: '7', name: 'HP Potion', heal: 50} : {id: '8', name: 'MP Potion', restore: 30};
-        pData.inventory = pData.inventory || [];
-        pData.inventory.push(item);
-        await CombatEngine.sync();
-    };
-
-    window.godReset = async () => {
-        if(confirm("PERMANENT DATA WIPE?")) {
-            const resetData = { level: 1, exp: 0, gold: 0, inventory: [], stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 5, luck: 0 }};
-            await updateDoc(doc(db, "players", auth.currentUser.uid), resetData);
-            location.reload();
-        }
-    };
-
-    function refreshGodStats() {
-        if(!pData) return;
-        const target = pData.level * 100;
-        let gearAtk = 0, gearDef = 0;
-        (pData.inventory || []).forEach(item => {
-            if(item.equipped) {
-                gearAtk += (Number(item.atk) || 0);
-                gearDef += (Number(item.def) || 0);
-            }
-        });
-
-        document.getElementById('g-hp').innerText = `${Math.floor(pData.stats.hp)}/${pData.stats.maxHp}`;
-        document.getElementById('g-mp').innerText = `${Math.floor(pData.stats.mana)}/${pData.stats.maxMana}`;
-        document.getElementById('g-xp-raw').innerText = `${pData.exp} / ${target}`;
-        document.getElementById('g-atk').innerText = pData.stats.atk;
-        document.getElementById('g-gatk').innerText = `+${gearAtk}`;
-        document.getElementById('g-def').innerText = pData.stats.def;
-        document.getElementById('g-gdef').innerText = `+${gearDef}`;
-        document.getElementById('g-luck').innerText = pData.stats.luck || 0;
-        document.getElementById('g-lvl').innerText = pData.level;
-    }
-
     function updateUI() {
-        if (!pData) return;
-        const target = pData.level * 100;
+        if (!player) return;
+        document.getElementById('pLevel').innerText = `LVL ${player.level}`;
+        document.getElementById('pHPText').innerText = `${Math.floor(player.stats.hp)} / ${player.stats.maxHp}`;
+        document.getElementById('pHPFill').style.width = `${(player.stats.hp / player.stats.maxHp) * 100}%`;
+        document.getElementById('pMPText').innerText = `${Math.floor(player.stats.mana)} / ${player.stats.maxMana}`;
+        document.getElementById('pMPFill').style.width = `${(player.stats.mana / player.stats.maxMana) * 100}%`;
+        document.getElementById('pXPFill').style.width = `${(player.exp / getRequiredXP(player.level)) * 100}%`;
+
+        const hpCount = player.inventory?.filter(i => i.id === 'hp_pot').length || 0;
+        const mpCount = player.inventory?.filter(i => i.id === 'mp_pot').length || 0;
         
-        document.getElementById('pLevel').innerText = `LVL ${pData.level}`;
-        document.getElementById('pHPFill').style.width = (pData.stats.hp / pData.stats.maxHp) * 100 + "%";
-        document.getElementById('pMPFill').style.width = (pData.stats.mana / pData.stats.maxMana) * 100 + "%";
-        
-        // Update EXP Bar
-        document.getElementById('pXPFill').style.width = (pData.exp / target) * 100 + "%";
-        document.getElementById('pXPText').innerText = `${pData.exp}/${target}`;
-        
-        document.getElementById('hpCount').innerText = (pData.inventory || []).filter(i => i.id === "7").length;
-        document.getElementById('mpCount').innerText = (pData.inventory || []).filter(i => i.id === "8").length;
+        const hpBtn = document.getElementById('useHPPot');
+        hpBtn.innerText = `HP POT (${hpCount})`;
+        hpBtn.disabled = (hpCount <= 0 || player.stats.hp >= player.stats.maxHp);
+
+        const mpBtn = document.getElementById('useMPPot');
+        mpBtn.innerText = `MP POT (${mpCount})`;
+        mpBtn.disabled = (mpCount <= 0 || player.stats.mana >= player.stats.maxMana);
 
         const m = CombatEngine.monster;
-        const skillBtn = document.getElementById('skillBtn');
-        if (pData.skills?.length) {
-            skillBtn.innerText = `${pData.skills[0]} (15MP)`;
-            skillBtn.disabled = !m || CombatEngine.isBusy || pData.stats.mana < 15;
-        }
-
         if (m) {
-            document.getElementById('mHPFill').style.width = (m.curHp / m.hp) * 100 + "%";
+            document.getElementById('mName').innerText = `${m.name} (Lvl ${m.level})`;
+            document.getElementById('mSprite').innerText = m.emoji || "👹";
+            document.getElementById('mHPFill').style.width = `${(m.curHp / m.hp) * 100}%`;
             document.getElementById('mHPText').innerText = `${Math.floor(m.curHp)} / ${m.hp}`;
-            document.getElementById('mMeta').innerText = `${m.name} (LVL ${m.level})`;
-            document.getElementById('mSprite').innerText = m.emoji;
+            
             document.getElementById('atkBtn').disabled = CombatEngine.isBusy;
-            document.getElementById('nextBtn').style.display = 'none';
-            document.getElementById('skipBtn').style.display = CombatEngine.isBattleStarted ? 'none' : 'block';
+            document.getElementById('skillBtn').disabled = (CombatEngine.isBusy || player.stats.mana < 15);
+            document.getElementById('spawnBtn').style.display = "none";
         } else {
-            document.getElementById('mHPFill').style.width = "0%";
-            document.getElementById('mHPText').innerText = "---";
-            document.getElementById('mMeta').innerText = "SEARCHING...";
+            document.getElementById('mName').innerText = "Searching...";
             document.getElementById('mSprite').innerText = "🌑";
+            document.getElementById('mHPFill').style.width = "0%";
+            document.getElementById('spawnBtn').style.display = "block";
+            document.getElementById('spawnBtn').innerText = "Explore Floor";
             document.getElementById('atkBtn').disabled = true;
-            document.getElementById('nextBtn').style.display = 'block';
-            document.getElementById('skipBtn').style.display = 'none';
+            document.getElementById('skillBtn').disabled = true;
         }
     }
+
+    async function usePotion(type) {
+        if (!player) return;
+        const potId = type === 'HP' ? 'hp_pot' : 'mp_pot';
+        const potIndex = player.inventory.findIndex(i => i.id === potId);
+        
+        if (potIndex > -1) {
+            player.inventory.splice(potIndex, 1);
+            if (type === 'HP') {
+                player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 50);
+                CombatEngine.ui.addLog("Used HP Potion! +50 HP", "var(--red)");
+            } else {
+                player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + 30);
+                CombatEngine.ui.addLog("Used MP Potion! +30 Mana", "var(--mana)");
+            }
+            await updateDoc(doc(db, "players", auth.currentUser.uid), {
+                inventory: player.inventory,
+                stats: player.stats
+            });
+        }
+    }
+
+    document.getElementById('mapTitle').onclick = () => GodMode.handleTrigger();
+    document.getElementById('retreatLink').onclick = () => window.location.href = "wildlands.html";
+    document.getElementById('spawnBtn').onclick = () => CombatEngine.spawn("THRESHOLD_OF_SOULS");
+    document.getElementById('atkBtn').onclick = () => CombatEngine.playerAttack(calculateCombatResult);
+    document.getElementById('skillBtn').onclick = () => CombatEngine.useSkill("Start Shadow", calculateCombatResult);
+    document.getElementById('useHPPot').onclick = () => usePotion('HP');
+    document.getElementById('useMPPot').onclick = () => usePotion('MP');
+    
 </script>
 </body>
 </html>

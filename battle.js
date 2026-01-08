@@ -26,7 +26,13 @@ export const CombatEngine = {
         this.monster = selected;
         this.monster.curHp = selected.hp;
         
-        this.ui.addLog(`${this.monster.name} emerges from the shadows!`, "#eee");
+        // Visual feedback for monster rarity
+        let color = "#eee";
+        if (this.monster.rarity === "rare") color = "var(--mana)";
+        if (this.monster.rarity === "elite") color = "var(--xp)";
+        if (this.monster.rarity === "boss") color = "var(--gold)";
+
+        this.ui.addLog(`${this.monster.name} (${this.monster.rarity.toUpperCase()}) emerges!`, color);
         this.ui.update();
     },
 
@@ -73,7 +79,6 @@ export const CombatEngine = {
         this.ui.update();
 
         if (this.monster.curHp <= 0) {
-            // Wait slightly for the animation then run handleVictory
             setTimeout(() => this.handleVictory(), 500);
         } else {
             setTimeout(() => this.monsterTurn(), 800);
@@ -95,36 +100,71 @@ export const CombatEngine = {
             setTimeout(() => this.ui.onDeath(), 1500);
         } else {
             await this.sync();
-            this.isBusy = false; // Unlock ONLY after sync is done
+            this.isBusy = false; 
             this.ui.update();
         }
     },
 
     async handleVictory() {
-        this.isBusy = true; // Stay locked until DB save is confirmed
+        this.isBusy = true; 
         this.ui.addLog(`${this.monster.name} has been slain!`, "var(--gold)");
         
-        // Update local stats
         this.player.exp += this.monster.xp;
         this.player.gold += this.monster.gold;
         this.ui.addLog(`+${this.monster.xp} XP | +${this.monster.gold} Gold`, "var(--gold)");
         
-        // Handle level up locally
+        // --- NEW LOOT SYSTEM ---
+        this.rollForLoot();
+
         processLevelUp(this.player);
         
-        // Save to Firebase and WAIT for it to finish (prevents XP rollback)
         await this.sync();
         
         this.monster = null;
-        this.isBusy = false; // Unlock for the next fight
+        this.isBusy = false; 
         this.ui.update();
+    },
+
+    rollForLoot() {
+        const totals = getPlayerTotals(this.player);
+        const roll = Math.random() * 100;
+        const luckBonus = (totals.luck || 0) / 2; // Luck increases drop rates
+        
+        let drop = null;
+
+        // Bosses always drop something
+        if (this.monster.rarity === "boss") {
+            drop = { id: "hp_pot", name: "Health Tonic", type: "potion", hp_heal: 50 };
+        } 
+        // Elites have a 40% base chance
+        else if (this.monster.rarity === "elite" && (roll + luckBonus) > 60) {
+            drop = Math.random() > 0.5 
+                ? { id: "hp_pot", name: "Health Tonic", type: "potion", hp_heal: 50 }
+                : { id: "mp_pot", name: "Mana Core", type: "potion", mp_heal: 30 };
+        }
+        // Rares have a 15% base chance
+        else if (this.monster.rarity === "rare" && (roll + luckBonus) > 85) {
+            drop = { id: "hp_pot", name: "Health Tonic", type: "potion", hp_heal: 50 };
+        }
+
+        if (drop) {
+            if (!this.player.inventory) this.player.inventory = [];
+            this.player.inventory.push(drop);
+            this.ui.addLog(`Loot found: ${drop.name}!`, "var(--teal)");
+        }
     },
 
     async sync() {
         if (this.auth.currentUser) {
             try {
-                // We send the whole player object to ensure exp/level/stats are all synced at once
-                await updateDoc(doc(this.db, "players", this.auth.currentUser.uid), this.player);
+                // Critical Fix: We await the update to prevent the "XP disappearing" bug
+                await updateDoc(doc(this.db, "players", this.auth.currentUser.uid), {
+                    exp: this.player.exp,
+                    gold: this.player.gold,
+                    level: this.player.level,
+                    stats: this.player.stats,
+                    inventory: this.player.inventory
+                });
             } catch (error) {
                 console.error("Firebase Sync Error:", error);
             }

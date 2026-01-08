@@ -1,50 +1,60 @@
 /**
  * monsters.js - The Inhabitants of Ruin
- * Monsters are grouped by Zone to lock them to specific maps.
+ * Redesigned for Threshold of Souls (Levels 1-10)
  */
 
 export const MONSTER_DATABASE = {
-    // --- ZONE: THRESHOLD OF SOULS (Levels 1-10) ---
     "THRESHOLD_OF_SOULS": {
-        "lost_wisp": { 
-            id: "lost_wisp", name: "Lost Wisp", emoji: "👻", 
-            level: 1, hp: 60, maxHp: 60, atk: 11, atkMin: 8, atkMax: 14, def: 2, xp: 30, gold: 20 
+        // --- LEVEL 1-3: THE FORGOTTEN OUTSKIRTS ---
+        "carrion_fly": { 
+            id: "carrion_fly", name: "Carrion Fly", emoji: "🪰", rarity: "common",
+            level: 1, hp: 45, maxHp: 45, atk: 10, def: 1, xp: 25, gold: 15 
         },
-        "grave_rat": { 
-            id: "grave_rat", name: "Grave Rat", emoji: "🐀", 
-            level: 2, hp: 110, maxHp: 110, atk: 18, atkMin: 14, atkMax: 22, def: 4, xp: 50, gold: 35 
+        "soul_fragment": { 
+            id: "soul_fragment", name: "Soul Fragment", emoji: "✨", rarity: "common",
+            level: 1, hp: 55, maxHp: 55, atk: 12, def: 2, xp: 35, gold: 20 
         },
-        "void_walker": { 
-            id: "void_walker", name: "Void Walker", emoji: "👣", 
-            level: 3, hp: 160, maxHp: 160, atk: 24, atkMin: 20, atkMax: 28, def: 8, xp: 75, gold: 50 
+        "rotting_shambler": { 
+            id: "rotting_shambler", name: "Rotting Shambler", emoji: "🧟", rarity: "common",
+            level: 2, hp: 105, maxHp: 105, atk: 19, def: 5, xp: 55, gold: 40 
         },
-        "bone_scavenger": { 
-            id: "bone_scavenger", name: "Bone Scavenger", emoji: "🦴", 
-            level: 4, hp: 220, maxHp: 220, atk: 30, atkMin: 25, atkMax: 35, def: 12, xp: 110, gold: 75 
+        "spectral_hound": { 
+            id: "spectral_hound", name: "Spectral Hound", emoji: "🐕‍🦺", rarity: "rare",
+            level: 3, hp: 140, maxHp: 140, atk: 26, def: 7, xp: 85, gold: 65 
         },
-        "shadow_husk": { 
-            id: "shadow_husk", name: "Shadow Husk", emoji: "👤", 
-            level: 5, hp: 290, maxHp: 290, atk: 36, atkMin: 30, atkMax: 42, def: 16, xp: 150, gold: 110 
+
+        // --- LEVEL 4-6: THE MISTY VEIL ---
+        "veiled_stalker": { 
+            id: "veiled_stalker", name: "Veiled Stalker", emoji: "🧥", rarity: "common",
+            level: 4, hp: 210, maxHp: 210, atk: 32, def: 12, xp: 120, gold: 90 
         },
-        "mist_horror": { 
-            id: "mist_horror", name: "Mist Horror", emoji: "🌫️", 
-            level: 6, hp: 370, maxHp: 370, atk: 42, atkMin: 36, atkMax: 48, def: 22, xp: 200, gold: 160 
+        "will_o_wisp": { 
+            id: "will_o_wisp", name: "Will-o'-Wisp", emoji: "🏮", rarity: "rare",
+            level: 5, hp: 260, maxHp: 260, atk: 38, def: 15, xp: 170, gold: 130 
         },
-        "soul_eater": { 
-            id: "soul_eater", name: "Soul Eater", emoji: "👾", 
-            level: 7, hp: 460, maxHp: 460, atk: 48, atkMin: 42, atkMax: 54, def: 28, xp: 270, gold: 220 
+        "casket_mimic": { 
+            id: "casket_mimic", name: "Casket Mimic", emoji: "⚰️", rarity: "elite",
+            level: 6, hp: 380, maxHp: 380, atk: 45, def: 25, xp: 240, gold: 200 
         },
-        "wailing_knight": { 
-            id: "wailing_knight", name: "Wailing Knight", emoji: "⚔️", 
-            level: 8, hp: 560, maxHp: 560, atk: 54, atkMin: 48, atkMax: 60, def: 35, xp: 350, gold: 300 
+
+        // --- LEVEL 7-9: THE INNER SANCTUM ---
+        "void_priest": { 
+            id: "void_priest", name: "Void Priest", emoji: "⛪", rarity: "common",
+            level: 7, hp: 480, maxHp: 480, atk: 52, def: 30, xp: 310, gold: 250 
         },
-        "reaper_acolyte": { 
-            id: "reaper_acolyte", name: "Reaper Acolyte", emoji: "🧙", 
-            level: 9, hp: 670, maxHp: 670, atk: 60, atkMin: 54, atkMax: 66, def: 42, xp: 450, gold: 400 
+        "chain_wraith": { 
+            id: "chain_wraith", name: "Chain Wraith", emoji: "⛓️", rarity: "rare",
+            level: 8, hp: 590, maxHp: 590, atk: 58, def: 38, xp: 400, gold: 340 
         },
-        "threshold_warden": { 
-            id: "threshold_warden", name: "Threshold Warden", emoji: "🐲", 
-            level: 10, hp: 800, maxHp: 800, atk: 68, atkMin: 62, atkMax: 74, def: 50, xp: 600, gold: 550 
+        "soul_reaper": { 
+            id: "soul_reaper", name: "Soul Reaper", emoji: "💀", rarity: "elite",
+            level: 9, hp: 720, maxHp: 720, atk: 65, def: 45, xp: 520, gold: 450 
+        },
+
+        // --- LEVEL 10: THE GATEKEEPER ---
+        "malphas_the_guardian": { 
+            id: "malphas_the_guardian", name: "Malphas the Guardian", emoji: "🦅", rarity: "boss",
+            level: 10, hp: 1200, maxHp: 1200, atk: 85, def: 60, xp: 1000, gold: 1200 
         }
     }
 };
@@ -59,14 +69,17 @@ export function getMonstersByZone(zoneKey) {
 export function getRandomMonsterFromZone(zoneKey, playerLvl) {
     const zonePool = Object.values(getMonstersByZone(zoneKey));
     
-    // Filter: Monsters up to 2 levels higher than player
-    const eligible = zonePool.filter(m => m.level <= (playerLvl + 2));
+    // Filter logic:
+    // 1. Monsters must be at or below Player Level + 1 (for challenge)
+    // 2. We allow low level monsters to keep the pool varied, but emphasize current level.
+    const eligible = zonePool.filter(m => m.level <= (playerLvl + 1));
     
-    // Fallback if no monsters match
-    if (eligible.length === 0) return JSON.parse(JSON.stringify(zonePool[0])); 
+    // Fallback to the first monster if nothing is found
+    if (eligible.length === 0) return { ...zonePool[0] }; 
     
+    // Weighting: Higher level monsters in the eligible pool are more likely to appear
     const selected = eligible[Math.floor(Math.random() * eligible.length)];
     
-    // Return a deep copy to ensure the database stays original
+    // Return a structured clone (modern deep copy) to prevent DB contamination
     return JSON.parse(JSON.stringify(selected));
 }

@@ -1,7 +1,7 @@
 // Godmode.js - Divine Authority Over Sovereigns of Ruin
 import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { SYSTEM_CONFIG } from "./system.js";
-import { MONSTER_DATABASE } from "./monsters.js"; // Import DB to populate spawner
+import { MONSTER_DATABASE } from "./monsters.js"; 
 import { CombatEngine } from "./battle.js";
 
 export const GodMode = {
@@ -23,12 +23,11 @@ export const GodMode = {
         if (this.clicks >= 5) {
             document.getElementById('godMenu').style.display = 'block';
             this.refreshDisplay();
-            this.populateMonsterList(); // Fill the dropdown
+            this.populateMonsterList(); 
             this.clicks = 0;
         }
     },
 
-    // New: Populates the dropdown with monsters from the current zone
     populateMonsterList() {
         const select = document.getElementById('godMonsterSelect');
         if (!select) return;
@@ -62,14 +61,12 @@ export const GodMode = {
             document.getElementById('godMenu').style.display = 'none';
         };
 
-        // NEW: Monster Spawner Logic
         document.getElementById('godSpawnBtn').onclick = () => {
             const monsterId = document.getElementById('godMonsterSelect').value;
             if (!monsterId) return;
 
             const monsterData = MONSTER_DATABASE["THRESHOLD_OF_SOULS"][monsterId];
             if (monsterData) {
-                // Manually inject the monster into the engine
                 if (CombatEngine.ui.clearLog) CombatEngine.ui.clearLog();
                 CombatEngine.monster = JSON.parse(JSON.stringify(monsterData));
                 CombatEngine.monster.curHp = monsterData.hp;
@@ -79,14 +76,12 @@ export const GodMode = {
             }
         };
 
-        // INSTANT RESTORE
         document.getElementById('godHeal').onclick = async () => {
             this.player.stats.hp = this.player.stats.maxHp;
             this.player.stats.mana = this.player.stats.maxMana;
             await this.sync();
         };
 
-        // LEVEL UP
         document.getElementById('godLevelUp').onclick = async () => {
             this.player.level++;
             this.player.exp = 0;
@@ -99,7 +94,6 @@ export const GodMode = {
             await this.sync();
         };
 
-        // LEVEL DOWN
         document.getElementById('godLevelDown').onclick = async () => {
             if (this.player.level <= 1) return;
             this.player.level--;
@@ -113,31 +107,48 @@ export const GodMode = {
             await this.sync();
         };
 
-        // GOLD +5K
         document.getElementById('godAddGold').onclick = async () => {
             this.player.gold = (Number(this.player.gold) || 0) + 5000;
             await this.sync();
         };
 
-        // GOLD -5K
         document.getElementById('godSubGold').onclick = async () => {
             this.player.gold = Math.max(0, (Number(this.player.gold) || 0) - 5000);
             await this.sync();
         };
 
-        // HARD RESET
+        // --- NUCLEAR HARD RESET ---
         document.getElementById('godHardReset').onclick = async () => {
-            if(!confirm("PERMANENT HARD RESET?")) return;
+            if(!confirm("PERMANENT HARD RESET? This wipes everything except your Origin/Place of Birth.")) return;
+            
+            // Core Progression
             this.player.level = 1;
             this.player.exp = 0;
             this.player.gold = 100;
+            
+            // Equipment & Inventory
             this.player.inventory = [];
             this.player.gear = { weapon: null, armor: null, accessory: null };
+            
+            // Stats Reset
             this.player.stats = {
                 hp: 100, maxHp: 100,
                 mana: 50, maxMana: 50,
                 atk: 10, def: 10, luck: 5
             };
+
+            // Questing History
+            this.player.completedQuests = []; 
+            this.player.activeQuest = null;
+            this.player.dailyGoldCount = 0; 
+
+            // Training & Timers
+            this.player.training = { str: 0, agi: 0, int: 0 };
+            this.player.trainingLevels = { maxHp: 0, maxMana: 0 };
+            this.player.trainingStat = null;
+            this.player.trainingUntil = null;
+            this.player.trainingTotalTime = 0; // Clears the 120000 ms value
+            
             await this.sync();
             location.reload(); 
         };

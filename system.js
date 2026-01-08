@@ -94,11 +94,12 @@ export function processLevelUp(pData) {
     return leveled;
 }
 
-/** Calculates final stats including gear bonuses */
+/** * UPDATED: Calculates final stats by scanning the inventory array.
+ * This matches your Firestore structure where items have an 'equipped' boolean.
+ */
 export function getPlayerTotals(pData) {
     if (!pData || !pData.stats) return { atk: 0, def: 0, maxHp: 0, maxMana: 0, luck: 0 };
     
-    const gear = pData.gear || {};
     const totals = {
         atk: Number(pData.stats.atk) || 0,
         def: Number(pData.stats.def) || 0,
@@ -107,9 +108,16 @@ export function getPlayerTotals(pData) {
         luck: Number(pData.stats.luck) || 0
     };
 
-    if (gear.weapon?.atk) totals.atk += Number(gear.weapon.atk);
-    if (gear.armor?.def) totals.def += Number(gear.armor.def);
-    if (gear.accessory?.luck) totals.luck += Number(gear.accessory.luck);
+    // Scan inventory for items where equipped is true
+    if (Array.isArray(pData.inventory)) {
+        pData.inventory.forEach(item => {
+            if (item && item.equipped === true) {
+                if (item.atk) totals.atk += Number(item.atk);
+                if (item.def) totals.def += Number(item.def);
+                if (item.luck) totals.luck += Number(item.luck);
+            }
+        });
+    }
 
     return totals;
 }

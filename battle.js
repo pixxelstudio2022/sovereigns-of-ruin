@@ -1,6 +1,6 @@
 // battle.js - The Combat Loop for Sovereigns of Ruin
 import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { processLevelUp } from "./system.js";
+import { processLevelUp, getPlayerTotals } from "./system.js"; // IMPORTED getPlayerTotals
 import { getRandomMonsterFromZone } from "./monsters.js";
 
 export const CombatEngine = {
@@ -20,8 +20,6 @@ export const CombatEngine = {
 
     spawn(zoneName) {
         if (this.isBusy || this.monster) return;
-
-        // NEW: Clear the log before starting a new fight
         if (this.ui.clearLog) this.ui.clearLog();
 
         const selected = getRandomMonsterFromZone(zoneName, this.player.level);
@@ -35,7 +33,15 @@ export const CombatEngine = {
     async playerAttack(calcFn) {
         if (!this.monster || this.isBusy) return;
         this.isBusy = true;
-        const result = calcFn(this.player, this.monster);
+
+        // FIXED: Use your system.js helper to get stats INCLUDING gear
+        const totals = getPlayerTotals(this.player);
+        const combatPlayer = {
+            ...this.player,
+            stats: { ...this.player.stats, atk: totals.atk, luck: totals.luck }
+        };
+
+        const result = calcFn(combatPlayer, this.monster);
         this.applyDamageToMonster(result);
     },
 
@@ -44,8 +50,15 @@ export const CombatEngine = {
         this.isBusy = true;
         this.player.stats.mana -= 15;
         this.ui.addLog(`You cast ${skillName}!`, "var(--mana)");
-        const result = calcFn(this.player, this.monster);
-        // Skills apply a 1.5x damage multiplier
+
+        // FIXED: Use your system.js helper to get stats INCLUDING gear
+        const totals = getPlayerTotals(this.player);
+        const combatPlayer = {
+            ...this.player,
+            stats: { ...this.player.stats, atk: totals.atk, luck: totals.luck }
+        };
+
+        const result = calcFn(combatPlayer, this.monster);
         result.damage = Math.floor(result.damage * 1.5);
         this.applyDamageToMonster(result);
     },
@@ -64,7 +77,6 @@ export const CombatEngine = {
         if (this.monster.curHp <= 0) {
             setTimeout(() => this.handleVictory(), 500);
         } else {
-            // Monster counters after a short delay
             setTimeout(() => this.monsterTurn(), 800);
         }
     },
@@ -72,8 +84,9 @@ export const CombatEngine = {
     async monsterTurn() {
         if (!this.monster) return;
         
-        // Basic monster damage logic (Attack - Player Def / 2)
-        const damage = Math.max(1, Math.floor(this.monster.atk - (this.player.stats.def / 2)));
+        // FIXED: Use Total Resilience (Def) from gear for the player's defense
+        const totals = getPlayerTotals(this.player);
+        const damage = Math.max(1, Math.floor(this.monster.atk - (totals.def / 2)));
         
         this.player.stats.hp = Math.max(0, this.player.stats.hp - damage);
         this.ui.addLog(`${this.monster.name} deals ${damage} damage to you!`, "var(--red)");
@@ -91,17 +104,14 @@ export const CombatEngine = {
 
     async handleVictory() {
         this.ui.addLog(`${this.monster.name} has been slain!`, "var(--gold)");
-        
         this.player.exp += this.monster.xp;
         this.player.gold += this.monster.gold;
-        
         this.ui.addLog(`+${this.monster.xp} XP | +${this.monster.gold} Gold`, "var(--gold)");
         
         processLevelUp(this.player);
         
         this.monster = null;
         this.isBusy = false;
-        
         await this.sync();
         this.ui.update();
     },

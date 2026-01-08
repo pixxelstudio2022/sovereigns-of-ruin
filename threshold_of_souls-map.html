@@ -14,55 +14,24 @@
             height: 100dvh; font-family: 'Inter', sans-serif; overflow: hidden; color: #eee; 
         }
         
+        /* Mobile-first game window constraint */
         .scene { 
             width: 400px; height: 100dvh; position: relative; 
             display: flex; flex-direction: column; background: var(--bg); 
             border-left: 1px solid #111; border-right: 1px solid #111; 
         }
 
-        /* Top Header Line */
-        .top-nav { 
-            padding: 10px 15px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 2px solid var(--red);
-        }
-
-        /* Enemy Display Area */
-        .combat-area { 
-            padding: 15px 0;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        /* Battle Log (Yellow Box - Shrunk and Fixed) */
+        .top-nav { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--red); }
+        .combat-area { padding: 15px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
         .log-area { 
-            height: 100px; 
-            background: #020202; 
-            padding: 10px 15px; 
-            font-size: 0.75rem; 
-            overflow-y: auto; 
-            font-family: monospace; 
-            border-top: 1px solid #111;
-            border-bottom: 1px solid #111;
+            height: 100px; background: #020202; padding: 10px 15px; 
+            font-size: 0.75rem; overflow-y: auto; font-family: monospace; 
+            border-top: 1px solid #111; border-bottom: 1px solid #111; 
         }
 
-        /* Stats & Actions (Blue Box - Moved up) */
-        .footer-ui { 
-            padding: 15px; 
-            background: #080808; 
-            flex-grow: 0; 
-        }
-
-        /* Footer Line Thingy at the end of the action area */
-        .action-bottom-line {
-            border-bottom: 2px solid #1a1a1a;
-            margin-top: 10px;
-            width: 100%;
-        }
+        .footer-ui { padding: 15px; background: #080808; flex-grow: 0; }
+        .action-bottom-line { border-bottom: 2px solid #1a1a1a; margin-top: 10px; width: 100%; }
 
         .btn { background: #0c0c0c; border: 1px solid #252525; color: var(--teal); padding: 12px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; width: 100%; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -75,12 +44,12 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.98); z-index: 1000; display: none; 
             padding: 20px; box-sizing: border-box; 
-            border: 2px solid var(--gold); 
-            overflow-y: auto;
+            border: 2px solid var(--gold); overflow-y: auto;
         }
         .god-card { background: #111; border: 1px solid #222; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
         .god-row { display: flex; gap: 8px; margin: 4px 0; }
         .god-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 10px; font-size: 0.65rem; cursor: pointer; text-transform: uppercase; font-weight: bold; width: 100%; }
+        .god-input { background: #000; color: #fff; border: 1px solid #444; font-size: 0.65rem; padding: 5px; }
     </style>
 </head>
 <body>
@@ -94,8 +63,16 @@
         <div class="god-card">
             <div style="font-size: 0.6rem; color: var(--teal); margin-bottom: 5px;">MONSTER SPAWNER</div>
             <div class="god-row">
-                <select id="godMonsterSelect" style="flex: 2; background: #000; color: #fff; border: 1px solid #444; font-size: 0.7rem;"></select>
+                <select id="godMonsterSelect" class="god-input" style="flex: 2;"></select>
                 <button id="godSpawnBtn" class="god-btn" style="flex: 1; border-color: var(--teal);">SPAWN</button>
+            </div>
+        </div>
+
+        <div class="god-card" style="border-color: var(--red);">
+            <div style="font-size: 0.6rem; color: var(--red); margin-bottom: 5px;">REMOTE PLAYER WIPE (BY UID)</div>
+            <div class="god-row">
+                <input type="text" id="godTargetUID" class="god-input" placeholder="Paste UID here..." style="flex: 2;">
+                <button id="godResetTargetBtn" class="god-btn" style="flex: 1; border-color: var(--red); background: #300;">WIPE</button>
             </div>
         </div>
 
@@ -111,7 +88,7 @@
             </div>
         </div>
         
-        <button class="god-btn" id="godHardReset" style="background:#400; border-color:var(--red); color:white; margin-top:10px;">Hard Player Reset</button>
+        <button class="god-btn" id="godHardReset" style="background:#400; border-color:var(--red); color:white; margin-top:10px;">Hard Player Reset (Self)</button>
         <button class="god-btn" id="closeGod" style="border-color:#555; margin-top:20px;">Exit Console</button>
     </div>
 
@@ -181,6 +158,8 @@
 
     onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
+        
+        // Link auth-guard & maintain Place of Birth logic
         onSnapshot(doc(db, "players", user.uid), (snap) => {
             if (!snap.exists()) return;
             player = snap.data();
@@ -230,7 +209,6 @@
             document.getElementById('mSprite').innerText = m.emoji || "👹";
             document.getElementById('mHPFill').style.width = `${(m.curHp / m.hp) * 100}%`;
             document.getElementById('mHPText').innerText = `${Math.floor(m.curHp)} / ${m.hp}`;
-            
             document.getElementById('atkBtn').disabled = CombatEngine.isBusy;
             document.getElementById('skillBtn').disabled = (CombatEngine.isBusy || player.stats.mana < 15);
             document.getElementById('spawnBtn').style.display = "none";
@@ -239,7 +217,6 @@
             document.getElementById('mSprite').innerText = "🌑";
             document.getElementById('mHPFill').style.width = "0%";
             document.getElementById('spawnBtn').style.display = "block";
-            document.getElementById('spawnBtn').innerText = "Explore Floor";
             document.getElementById('atkBtn').disabled = true;
             document.getElementById('skillBtn').disabled = true;
         }
@@ -273,7 +250,6 @@
     document.getElementById('skillBtn').onclick = () => CombatEngine.useSkill("Start Shadow", calculateCombatResult);
     document.getElementById('useHPPot').onclick = () => usePotion('HP');
     document.getElementById('useMPPot').onclick = () => usePotion('MP');
-    
 </script>
 </body>
 </html>

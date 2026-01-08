@@ -57,9 +57,7 @@
 <div class="scene" id="mainScene">
     <div id="godMenu">
         <div style="color:var(--gold); text-align:center; font-weight:900; margin-bottom:15px;">DIVINE CONSOLE</div>
-        
         <div class="god-card" id="godStatsDisplay"></div>
-
         <div class="god-card">
             <div style="font-size: 0.6rem; color: var(--teal); margin-bottom: 5px;">MONSTER SPAWNER</div>
             <div class="god-row">
@@ -67,7 +65,6 @@
                 <button id="godSpawnBtn" class="god-btn" style="flex: 1; border-color: var(--teal);">SPAWN</button>
             </div>
         </div>
-
         <div class="god-card" style="border-color: var(--red);">
             <div style="font-size: 0.6rem; color: var(--red); margin-bottom: 5px;">REMOTE PLAYER WIPE (BY UID)</div>
             <div class="god-row">
@@ -75,7 +72,6 @@
                 <button id="godResetTargetBtn" class="god-btn" style="flex: 1; border-color: var(--red); background: #300;">WIPE</button>
             </div>
         </div>
-
         <div class="god-card">
             <button class="god-btn" id="godHeal" style="color:var(--teal); margin-bottom:8px;">Instant Restore</button>
             <div class="god-row">
@@ -87,7 +83,6 @@
                 <button class="god-btn" id="godSubGold">-5K Gold</button>
             </div>
         </div>
-        
         <button class="god-btn" id="godHardReset" style="background:#400; border-color:var(--red); color:white; margin-top:10px;">Hard Player Reset (Self)</button>
         <button class="god-btn" id="closeGod" style="border-color:#555; margin-top:20px;">Exit Console</button>
     </div>
@@ -131,7 +126,6 @@
         </div>
 
         <button id="spawnBtn" class="btn" style="border-color: var(--teal);">Explore Floor</button>
-        
         <div class="action-bottom-line"></div>
     </div>
 </div>
@@ -159,7 +153,6 @@
     onAuthStateChanged(auth, (user) => {
         if (!user) { window.location.href = "login.html"; return; }
         
-        // Link auth-guard & maintain Place of Birth logic
         onSnapshot(doc(db, "players", user.uid), (snap) => {
             if (!snap.exists()) return;
             player = snap.data();
@@ -192,8 +185,9 @@
         document.getElementById('pMPFill').style.width = `${(player.stats.mana / player.stats.maxMana) * 100}%`;
         document.getElementById('pXPFill').style.width = `${(player.exp / getRequiredXP(player.level)) * 100}%`;
 
-        const hpCount = player.inventory?.filter(i => i.id === 'hp_pot').length || 0;
-        const mpCount = player.inventory?.filter(i => i.id === 'mp_pot').length || 0;
+        // FIXED: Count potions based on type and heal property to match Inventory/Shop
+        const hpCount = player.inventory?.filter(i => i.type === 'potion' && i.hp_heal > 0).length || 0;
+        const mpCount = player.inventory?.filter(i => i.type === 'potion' && i.mp_heal > 0).length || 0;
         
         const hpBtn = document.getElementById('useHPPot');
         hpBtn.innerText = `HP POT (${hpCount})`;
@@ -222,20 +216,30 @@
         }
     }
 
+    // FIXED: Modern usePotion logic that searches by type and applies dynamic heal values
     async function usePotion(type) {
-        if (!player) return;
-        const potId = type === 'HP' ? 'hp_pot' : 'mp_pot';
-        const potIndex = player.inventory.findIndex(i => i.id === potId);
+        if (!player || !player.inventory) return;
+
+        const potIndex = player.inventory.findIndex(i => {
+            if (type === 'HP') return i.type === 'potion' && i.hp_heal > 0;
+            if (type === 'MP') return i.type === 'potion' && i.mp_heal > 0;
+            return false;
+        });
         
         if (potIndex > -1) {
+            const item = player.inventory[potIndex];
             player.inventory.splice(potIndex, 1);
+
             if (type === 'HP') {
-                player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 50);
-                CombatEngine.ui.addLog("Used HP Potion! +50 HP", "var(--red)");
+                const heal = item.hp_heal || 50;
+                player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + heal);
+                CombatEngine.ui.addLog(`Used ${item.name}! +${heal} HP`, "var(--red)");
             } else {
-                player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + 30);
-                CombatEngine.ui.addLog("Used MP Potion! +30 Mana", "var(--mana)");
+                const heal = item.mp_heal || 30;
+                player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + heal);
+                CombatEngine.ui.addLog(`Used ${item.name}! +${heal} MP`, "var(--mana)");
             }
+
             await updateDoc(doc(db, "players", auth.currentUser.uid), {
                 inventory: player.inventory,
                 stats: player.stats

@@ -94,19 +94,6 @@ export const GodMode = {
             await this.sync();
         };
 
-        document.getElementById('godLevelDown').onclick = async () => {
-            if (this.player.level <= 1) return;
-            this.player.level--;
-            this.player.exp = 0;
-            this.player.stats.maxHp -= SYSTEM_CONFIG.HP_PER_LVL;
-            this.player.stats.maxMana -= SYSTEM_CONFIG.MP_PER_LVL;
-            this.player.stats.atk -= SYSTEM_CONFIG.ATK_PER_LVL;
-            this.player.stats.def -= SYSTEM_CONFIG.DEF_PER_LVL;
-            this.player.stats.hp = this.player.stats.maxHp;
-            this.player.stats.mana = this.player.stats.maxMana;
-            await this.sync();
-        };
-
         document.getElementById('godAddGold').onclick = async () => {
             this.player.gold = (Number(this.player.gold) || 0) + 5000;
             await this.sync();
@@ -117,40 +104,57 @@ export const GodMode = {
             await this.sync();
         };
 
-        // --- NUCLEAR HARD RESET ---
+        // --- NUCLEAR HARD RESET (Self) ---
         document.getElementById('godHardReset').onclick = async () => {
-            if(!confirm("PERMANENT HARD RESET? This wipes everything except your Origin/Place of Birth.")) return;
-            
-            // Core Progression
-            this.player.level = 1;
-            this.player.exp = 0;
-            this.player.gold = 100;
-            
-            // Equipment & Inventory
-            this.player.inventory = [];
-            this.player.gear = { weapon: null, armor: null, accessory: null };
-            
-            // Stats Reset
-            this.player.stats = {
-                hp: 100, maxHp: 100,
-                mana: 50, maxMana: 50,
-                atk: 10, def: 10, luck: 5
-            };
-
-            // Questing History
-            this.player.completedQuests = []; 
-            this.player.activeQuest = null;
-            this.player.dailyGoldCount = 0; 
-
-            // Training & Timers
-            this.player.training = { str: 0, agi: 0, int: 0 };
-            this.player.trainingLevels = { maxHp: 0, maxMana: 0 };
-            this.player.trainingStat = null;
-            this.player.trainingUntil = null;
-            this.player.trainingTotalTime = 0; // Clears the 120000 ms value
-            
+            if(!confirm("PERMANENT HARD RESET? This wipes everything except your Origin.")) return;
+            this.wipeData(this.player);
             await this.sync();
             location.reload(); 
         };
+
+        // --- TARGETED PLAYER WIPE ---
+        document.getElementById('godResetTargetBtn').onclick = async () => {
+            const targetUID = document.getElementById('godTargetUID').value.trim();
+            if (!targetUID) return alert("Enter Target UID");
+            if (targetUID === this.auth.currentUser.uid) return alert("Use standard Reset for yourself.");
+            
+            if(!confirm(`PERMANENTLY WIPE PLAYER ${targetUID}?`)) return;
+
+            const freshData = {
+                level: 1,
+                exp: 0,
+                gold: 100,
+                inventory: [],
+                gear: { weapon: null, armor: null, accessory: null },
+                stats: { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 10, luck: 5 },
+                completedQuests: [],
+                activeQuest: null,
+                dailyGoldCount: 0,
+                training: { str: 0, agi: 0, int: 0 },
+                trainingLevels: { maxHp: 0, maxMana: 0 },
+                trainingStat: null,
+                trainingUntil: null,
+                trainingTotalTime: 0
+            };
+
+            try {
+                await updateDoc(doc(this.db, "players", targetUID), freshData);
+                alert("Target successfully wiped to Level 1.");
+            } catch (e) {
+                alert("Error: UID not found or Permission Denied.");
+            }
+        };
+    },
+
+    // Helper to keep reset logic consistent
+    wipeData(p) {
+        p.level = 1; p.exp = 0; p.gold = 100;
+        p.inventory = [];
+        p.gear = { weapon: null, armor: null, accessory: null };
+        p.stats = { hp: 100, maxHp: 100, mana: 50, maxMana: 50, atk: 10, def: 10, luck: 5 };
+        p.completedQuests = []; p.activeQuest = null; p.dailyGoldCount = 0;
+        p.training = { str: 0, agi: 0, int: 0 };
+        p.trainingLevels = { maxHp: 0, maxMana: 0 };
+        p.trainingStat = null; p.trainingUntil = null; p.trainingTotalTime = 0;
     }
 };

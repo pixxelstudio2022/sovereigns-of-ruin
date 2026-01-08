@@ -1,6 +1,6 @@
 // battle.js - The Combat Loop for Sovereigns of Ruin
 import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { processLevelUp, getPlayerTotals } from "./system.js"; // IMPORTED getPlayerTotals
+import { processLevelUp, getPlayerTotals } from "./system.js";
 import { getRandomMonsterFromZone } from "./monsters.js";
 
 export const CombatEngine = {
@@ -34,7 +34,6 @@ export const CombatEngine = {
         if (!this.monster || this.isBusy) return;
         this.isBusy = true;
 
-        // FIXED: Use your system.js helper to get stats INCLUDING gear
         const totals = getPlayerTotals(this.player);
         const combatPlayer = {
             ...this.player,
@@ -51,7 +50,6 @@ export const CombatEngine = {
         this.player.stats.mana -= 15;
         this.ui.addLog(`You cast ${skillName}!`, "var(--mana)");
 
-        // FIXED: Use your system.js helper to get stats INCLUDING gear
         const totals = getPlayerTotals(this.player);
         const combatPlayer = {
             ...this.player,
@@ -75,6 +73,7 @@ export const CombatEngine = {
         this.ui.update();
 
         if (this.monster.curHp <= 0) {
+            // Wait slightly for the animation then run handleVictory
             setTimeout(() => this.handleVictory(), 500);
         } else {
             setTimeout(() => this.monsterTurn(), 800);
@@ -84,41 +83,51 @@ export const CombatEngine = {
     async monsterTurn() {
         if (!this.monster) return;
         
-        // FIXED: Use Total Resilience (Def) from gear for the player's defense
         const totals = getPlayerTotals(this.player);
         const damage = Math.max(1, Math.floor(this.monster.atk - (totals.def / 2)));
         
         this.player.stats.hp = Math.max(0, this.player.stats.hp - damage);
         this.ui.addLog(`${this.monster.name} deals ${damage} damage to you!`, "var(--red)");
         
-        this.isBusy = false;
         if (this.player.stats.hp <= 0) {
             this.ui.addLog("You have been defeated...", "var(--red)");
             await this.sync();
             setTimeout(() => this.ui.onDeath(), 1500);
         } else {
             await this.sync();
+            this.isBusy = false; // Unlock ONLY after sync is done
             this.ui.update();
         }
     },
 
     async handleVictory() {
+        this.isBusy = true; // Stay locked until DB save is confirmed
         this.ui.addLog(`${this.monster.name} has been slain!`, "var(--gold)");
+        
+        // Update local stats
         this.player.exp += this.monster.xp;
         this.player.gold += this.monster.gold;
         this.ui.addLog(`+${this.monster.xp} XP | +${this.monster.gold} Gold`, "var(--gold)");
         
+        // Handle level up locally
         processLevelUp(this.player);
         
-        this.monster = null;
-        this.isBusy = false;
+        // Save to Firebase and WAIT for it to finish (prevents XP rollback)
         await this.sync();
+        
+        this.monster = null;
+        this.isBusy = false; // Unlock for the next fight
         this.ui.update();
     },
 
     async sync() {
         if (this.auth.currentUser) {
-            await updateDoc(doc(this.db, "players", this.auth.currentUser.uid), this.player);
+            try {
+                // We send the whole player object to ensure exp/level/stats are all synced at once
+                await updateDoc(doc(this.db, "players", this.auth.currentUser.uid), this.player);
+            } catch (error) {
+                console.error("Firebase Sync Error:", error);
+            }
         }
     }
 };
